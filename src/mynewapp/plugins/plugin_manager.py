@@ -52,7 +52,8 @@ class PluginManager:
         module = importlib.util.module_from_spec(spec)
         sys.modules[module_name] = module
         try:
-            spec.loader.exec_module(module)  # type: ignore[union-attr]
+            if spec.loader is not None:
+                spec.loader.exec_module(module)
         except Exception as e:
             logger.warning(f"Failed to load plugin {path}: {e}")
             return False

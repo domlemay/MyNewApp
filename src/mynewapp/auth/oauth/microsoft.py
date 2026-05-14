@@ -26,7 +26,7 @@ class MicrosoftOAuth:
     def has_client_id(self) -> bool:
         return bool(self._client_id)
 
-    def authenticate(self) -> dict:
+    def authenticate(self) -> dict[str, str]:
         if not self._client_id:
             raise RuntimeError(
                 "Microsoft OAuth client_id not configured. "

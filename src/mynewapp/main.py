@@ -6,6 +6,7 @@ from loguru import logger
 from PyQt6.QtWidgets import QApplication
 
 from mynewapp.auth.auth_service import AuthService
+from mynewapp.auth.models import User
 from mynewapp.ui.auth.login_window import LoginWindow
 from mynewapp.ui.main_window import MainWindow
 
@@ -23,11 +24,12 @@ def main() -> None:
     auth = AuthService()
 
     login = LoginWindow(auth)
-    current_user = None
+    current_user: User | None = None
 
-    def on_login(user):
+    def on_login(user: object) -> None:
         nonlocal current_user
-        current_user = user
+        if isinstance(user, User):
+            current_user = user
         login.accept()
 
     login.login_success.connect(on_login)

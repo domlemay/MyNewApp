@@ -46,9 +46,11 @@ class GitHubService:
         private: bool = True,
         auto_init: bool = False,
     ) -> Repository.Repository:
-        user = self._get_client().get_user()
+        from github.AuthenticatedUser import AuthenticatedUser
+        raw_user = self._get_client().get_user()
+        user = raw_user if isinstance(raw_user, AuthenticatedUser) else self._get_client().get_user()
         try:
-            repo = user.create_repo(
+            repo = user.create_repo(  # type: ignore[union-attr]
                 name=name,
                 description=description,
                 private=private,
@@ -60,18 +62,18 @@ class GitHubService:
             logger.error(f"Failed to create repo: {e}")
             raise
 
-    def get_user_repos(self, limit: int = 50) -> list[dict]:
+    def get_user_repos(self, limit: int = 50) -> list[dict[str, str]]:
         user = self._get_client().get_user()
-        repos = []
+        repos: list[dict[str, str]] = []
         for repo in user.get_repos(sort="updated"):
             if len(repos) >= limit:
                 break
             repos.append({
-                "name": repo.name,
-                "language": repo.language,
-                "description": repo.description,
-                "url": repo.html_url,
-                "topics": repo.get_topics(),
+                "name": repo.name or "",
+                "language": repo.language or "",
+                "description": repo.description or "",
+                "url": repo.html_url or "",
+                "topics": ", ".join(repo.get_topics()),
             })
         return repos
 

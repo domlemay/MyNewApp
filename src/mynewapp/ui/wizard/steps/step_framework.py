@@ -1,207 +1,250 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import pyqtSlot
-from PyQt6.QtWidgets import QHBoxLayout, QLabel, QWidget
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
+)
 
 from mynewapp.core import StateManager
 from mynewapp.core.compatibility import check_framework_lang_compat
 from mynewapp.i18n import tr
-from mynewapp.ui.widgets.card_selector import CardOption, CardSelector
-from mynewapp.ui.widgets.detail_panel import DetailPanel
 
 from ._base import BaseStep
 
-_FW_MAP: dict[str, list[tuple[str, str, str]]] = {
+_FW_MAP: dict[str, list[tuple[str, str, str, str]]] = {
     "python": [
-        ("fastapi",   "FastAPI",    "⚡"),
-        ("django",    "Django",     "🎸"),
-        ("flask",     "Flask",      "🌶"),
-        ("pyqt6",     "PyQt6",      "🖥"),
-        ("fasthtml",  "FastHTML",   "🚀"),
-        ("litestar",  "Litestar",   "⭐"),
-        ("streamlit", "Streamlit",  "📊"),
-        ("tornado",   "Tornado",    "🌪"),
+        ("fastapi",   "FastAPI",    "⚡", "API REST asynchrone ultra-rapide. Auto-génère OpenAPI docs. Standard moderne pour les APIs Python."),
+        ("django",    "Django",     "🎸", "Framework complet — ORM, admin, auth inclus. Parfait pour les apps data-heavy."),
+        ("flask",     "Flask",      "🌶", "Micro-framework WSGI minimal et flexible. Idéal pour les microservices et APIs simples."),
+        ("pyqt6",     "PyQt6",      "🖥", "Bindings Qt6 pour Python. Apps desktop natives multi-plateforme."),
+        ("fasthtml",  "FastHTML",   "🚀", "Framework web Python moderne pour apps hypermedia. Simple et rapide."),
+        ("litestar",  "Litestar",   "⭐", "Framework ASGI opinioné avec support first-class du typage et OpenAPI."),
+        ("streamlit", "Streamlit",  "📊", "Transforme des scripts Python en web apps. Parfait pour la data science / ML."),
+        ("tornado",   "Tornado",    "🌪", "Framework web async Python. Excellente gestion WebSocket et connexions longues."),
     ],
     "typescript": [
-        ("nextjs",   "Next.js",   "▲"),
-        ("react",    "React",     "⚛"),
-        ("vue",      "Vue",       "💚"),
-        ("angular",  "Angular",   "🔴"),
-        ("nuxt",     "Nuxt",      "💚"),
-        ("svelte",   "SvelteKit", "🔥"),
-        ("astro",    "Astro",     "🚀"),
-        ("remix",    "Remix",     "💿"),
-        ("nestjs",   "NestJS",    "🐈"),
-        ("express",  "Express",   "🟢"),
+        ("nextjs",   "Next.js",   "▲", "Framework React full-stack par Vercel. SSR, SSG, API routes, edge runtime."),
+        ("react",    "React",     "⚛", "La librairie UI la plus populaire. Composants, grand écosystème."),
+        ("vue",      "Vue",       "💚", "Framework progressif JS. Courbe d'apprentissage douce, excellente doc."),
+        ("angular",  "Angular",   "🔴", "Framework complet opinioné par Google. TypeScript-first, enterprise."),
+        ("nuxt",     "Nuxt",      "💚", "Meta-framework Vue. SSR, SSG, routing basé sur les fichiers."),
+        ("svelte",   "SvelteKit", "🔥", "Compilé — pas de virtual DOM. Bundles plus légers, apps plus rapides."),
+        ("astro",    "Astro",     "🚀", "Sites de contenu rapides. Zéro JS par défaut. Support multi-framework."),
+        ("remix",    "Remix",     "💿", "Full-stack React axé sur les standards web et l'amélioration progressive."),
+        ("nestjs",   "NestJS",    "🐈", "Framework Node.js opinioné, architecture Angular-like. Excellent pour les APIs."),
+        ("express",  "Express",   "🟢", "Framework Node.js minimal et flexible. La base de nombreuses apps Node."),
     ],
     "javascript": [
-        ("react",    "React",     "⚛"),
-        ("vue",      "Vue",       "💚"),
-        ("svelte",   "Svelte",    "🔥"),
-        ("express",  "Express",   "🟢"),
-        ("astro",    "Astro",     "🚀"),
+        ("react",    "React",     "⚛", "La librairie UI la plus populaire. Composants réutilisables, grand écosystème."),
+        ("vue",      "Vue",       "💚", "Framework progressif. Simple à apprendre, excellent pour les petites équipes."),
+        ("svelte",   "Svelte",    "🔥", "Compilé, pas de virtual DOM. Bundles très légers."),
+        ("express",  "Express",   "🟢", "Micro-framework Node.js. Standard de facto pour les APIs Node simples."),
+        ("astro",    "Astro",     "🚀", "Sites statiques ultra-rapides. Support multi-framework."),
     ],
     "go": [
-        ("gin",   "Gin",   "🍸"),
-        ("echo",  "Echo",  "🔊"),
-        ("fiber", "Fiber", "🚀"),
-        ("chi",   "Chi",   "⚙"),
+        ("gin",   "Gin",   "🍸", "Framework HTTP rapide pour Go. Minimaliste, excellent routage, très performant."),
+        ("echo",  "Echo",  "🔊", "Framework web Go haute performance, extensible et minimaliste."),
+        ("fiber", "Fiber", "🚀", "Inspiré d'Express pour Go. Extrêmement rapide, faible empreinte mémoire."),
+        ("chi",   "Chi",   "⚙",  "Routeur HTTP léger pour Go. Idiomatic Go, middlewares standards."),
     ],
     "kotlin": [
-        ("android", "Android",      "🤖"),
-        ("ktor",    "Ktor",         "🎯"),
-        ("spring_boot", "Spring",   "🌿"),
+        ("android",     "Android",  "🤖", "SDK Android officiel. Apps natives Android avec toutes les APIs système."),
+        ("ktor",        "Ktor",     "🎯", "Framework async Kotlin par JetBrains. Léger, coroutines-first."),
+        ("spring_boot", "Spring",   "🌿", "Framework enterprise Java/Kotlin. Auto-configuration, serveur embarqué."),
     ],
     "swift": [
-        ("swiftui", "SwiftUI", "🍎"),
-        ("vapor",   "Vapor",   "💨"),
+        ("swiftui", "SwiftUI", "🍎", "Framework UI déclaratif Apple. iOS, macOS, watchOS, tvOS depuis une seule codebase."),
+        ("vapor",   "Vapor",   "💨", "Framework web Swift côté serveur. Async/await natif, très performant."),
     ],
     "java": [
-        ("spring_boot", "Spring Boot", "🌿"),
-        ("quarkus",     "Quarkus",     "⚡"),
-        ("micronaut",   "Micronaut",   "🔬"),
-        ("none",        "Vanilla Java", "☕"),
+        ("spring_boot", "Spring Boot", "🌿", "Framework enterprise Java. Auto-configuration, serveur embarqué, écosystème gigantesque."),
+        ("quarkus",     "Quarkus",     "⚡", "Java natif Kubernetes. Démarrage ultra-rapide, faible consommation mémoire."),
+        ("micronaut",   "Micronaut",   "🔬", "Framework JVM moderne. Injection au compile-time, très léger."),
+        ("none",        "Java Vanilla","☕", "Pas de framework — projet Java pur avec Maven ou Gradle."),
     ],
     "csharp": [
-        ("dotnet",  ".NET / ASP.NET", "💜"),
-        ("blazor",  "Blazor",         "🔷"),
-        ("maui",    ".NET MAUI",      "📱"),
-        ("none",    "Vanilla C#",     "💜"),
+        ("dotnet",  ".NET / ASP.NET", "💜", "Framework Microsoft cross-platform. ASP.NET Core pour les APIs web et MVC."),
+        ("blazor",  "Blazor",         "🔷", "UI web interactive en C#. WebAssembly ou rendu côté serveur."),
+        ("maui",    ".NET MAUI",      "📱", "Apps cross-platform mobile et desktop en C#."),
+        ("none",    "C# Vanilla",     "💜", "Pas de framework — projet C# pur."),
     ],
     "rust": [
-        ("tauri",  "Tauri",    "🦀"),
-        ("actix",  "Actix-Web","⚡"),
-        ("axum",   "Axum",     "🪓"),
-        ("none",   "Vanilla Rust", "🦀"),
+        ("tauri",  "Tauri",       "🦀", "Apps desktop avec UI web et backend Rust. Bundles minuscules, très sécurisé."),
+        ("actix",  "Actix-Web",   "⚡", "L'un des frameworks web les plus rapides au monde. Basé sur les acteurs."),
+        ("axum",   "Axum",        "🪓", "Framework web Rust ergonomique basé sur Tokio. Excellent support async."),
+        ("none",   "Rust Vanilla","🦀", "Pas de framework — projet Rust pur."),
     ],
     "dart": [
-        ("flutter", "Flutter", "🎪"),
-        ("none",    "Vanilla Dart", "🎯"),
+        ("flutter", "Flutter",     "🎪", "SDK UI Google. Une codebase pour mobile, web et desktop. Performances natives."),
+        ("none",    "Dart Vanilla","🎯", "Pas de framework — projet Dart pur."),
     ],
     "php": [
-        ("laravel",  "Laravel",  "🔺"),
-        ("symfony",  "Symfony",  "🎻"),
-        ("wordpress","WordPress","📝"),
-        ("none",     "Vanilla PHP", "🐘"),
+        ("laravel",   "Laravel",    "🔺", "Framework PHP élégant. Syntaxe expressive, batteries incluses."),
+        ("symfony",   "Symfony",    "🎻", "Framework PHP enterprise. Composants réutilisables, idéal pour les grands projets."),
+        ("wordpress", "WordPress",  "📝", "CMS PHP le plus utilisé au monde. Idéal pour les sites de contenu."),
+        ("none",      "PHP Vanilla","🐘", "Pas de framework — PHP pur."),
     ],
     "ruby": [
-        ("rails",   "Rails",   "💎"),
-        ("sinatra", "Sinatra", "🎵"),
-        ("hanami",  "Hanami",  "🌸"),
-        ("none",    "Vanilla Ruby", "💎"),
+        ("rails",   "Rails",       "💎", "Convention over configuration. Développement rapide, écosystème riche."),
+        ("sinatra", "Sinatra",     "🎵", "DSL Ruby minimaliste pour les apps web. Léger, flexible."),
+        ("hanami",  "Hanami",      "🌸", "Framework Ruby moderne et modulaire. Architecture propre, performant."),
+        ("none",    "Ruby Vanilla","💎", "Pas de framework — Ruby pur."),
     ],
 }
 
-_FW_DESC: dict[str, str] = {
-    "fastapi": "High-performance async Python API. Auto-generates OpenAPI docs. Modern standard for Python APIs.",
-    "django": "Batteries-included web framework. ORM, admin, auth built-in. Perfect for data-heavy apps.",
-    "flask": "Lightweight WSGI framework. Minimal, flexible, easy to learn. Great for microservices.",
-    "pyqt6": "Qt6 bindings for Python. Build native desktop apps for Windows, macOS, Linux.",
-    "fasthtml": "Fast, simple Python web framework for modern web apps with hypermedia.",
-    "litestar": "Opinionated, fast ASGI framework with first-class typing and OpenAPI support.",
-    "streamlit": "Turn Python scripts into shareable web apps. Perfect for data science and ML demos.",
-    "nextjs": "Full-stack React framework by Vercel. SSR, SSG, API routes, edge runtime.",
-    "react": "The most popular UI library. Component-based, huge ecosystem, versatile.",
-    "vue": "Progressive JS framework. Gentle learning curve, excellent documentation.",
-    "angular": "Opinionated full framework by Google. TypeScript-first, great for enterprise.",
-    "nuxt": "Vue-based meta-framework. SSR, SSG, file-based routing, great DX.",
-    "svelte": "Compiled framework — no virtual DOM. Smaller bundles, faster apps.",
-    "astro": "Build content sites fast. Ships zero JS by default. Multi-framework support.",
-    "remix": "Full-stack React framework focused on web standards and progressive enhancement.",
-    "nestjs": "Opinionated Node.js framework with Angular-like architecture. Great for APIs.",
-    "express": "Minimal, flexible Node.js web framework. The foundation of many Node apps.",
-    "gin": "Fast HTTP framework for Go. Minimalistic, great performance, easy routing.",
-    "echo": "High performance, extensible, minimalist Go web framework.",
-    "fiber": "Express-inspired Go framework. Extremely fast, low memory footprint.",
-    "flutter": "Google's UI toolkit. One codebase for mobile, web, and desktop.",
-    "spring_boot": "Enterprise Java framework. Auto-configuration, embedded server, vast ecosystem.",
-    "quarkus": "Kubernetes-native Java. Supersonic, subatomic. Great startup time.",
-    "dotnet": "Microsoft's cross-platform framework. ASP.NET Core for web APIs and MVC.",
-    "blazor": "Build interactive web UIs with C#. WebAssembly or server-side rendering.",
-    "tauri": "Build desktop apps with a web frontend and a Rust backend. Tiny bundles.",
-    "actix": "Extremely fast Rust web framework. One of the fastest web frameworks overall.",
-    "axum": "Ergonomic Rust web framework built on Tokio. Great async support.",
-    "laravel": "Elegant PHP framework. Expressive, clean syntax, batteries included.",
-    "symfony": "Enterprise PHP framework. Reusable components, great for large projects.",
-    "rails": "Convention over configuration. Rapid development, rich ecosystem.",
-}
+
+class _FwRow(QWidget):
+    def __init__(self, key: str, icon: str, name: str, desc: str, on_select: object) -> None:
+        super().__init__()
+        self.key = key
+        self._selected = False
+        self._on_select = on_select
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFixedHeight(60)
+
+        self._frame = QWidget()
+        self._frame.setObjectName("fwRow")
+        fl = QHBoxLayout(self._frame)
+        fl.setContentsMargins(12, 6, 12, 6)
+        fl.setSpacing(12)
+
+        icon_lbl = QLabel(icon)
+        icon_lbl.setFont(QFont("Segoe UI Emoji", 16))
+        icon_lbl.setFixedWidth(30)
+        icon_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        fl.addWidget(icon_lbl)
+
+        text = QVBoxLayout()
+        text.setSpacing(1)
+        text.setContentsMargins(0, 0, 0, 0)
+
+        self._name_lbl = QLabel(name)
+        self._name_lbl.setFont(QFont("Segoe UI", 11, QFont.Weight.Bold))
+        text.addWidget(self._name_lbl)
+
+        self._desc_lbl = QLabel(desc)
+        self._desc_lbl.setFont(QFont("Segoe UI", 9))
+        text.addWidget(self._desc_lbl)
+
+        fl.addLayout(text, stretch=1)
+
+        self._dot = QLabel("○")
+        self._dot.setFont(QFont("Segoe UI", 14))
+        self._dot.setFixedWidth(20)
+        self._dot.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        fl.addWidget(self._dot)
+
+        outer = QHBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(self._frame)
+        self._apply_style()
+
+    def set_selected(self, selected: bool) -> None:
+        self._selected = selected
+        self._apply_style()
+
+    def _apply_style(self) -> None:
+        if self._selected:
+            self._frame.setStyleSheet(
+                "#fwRow { background: #0d419d; border: 2px solid #58a6ff; border-radius: 6px; }"
+            )
+            self._name_lbl.setStyleSheet("color: #e6edf3;")
+            self._desc_lbl.setStyleSheet("color: #a5c8ff;")
+            self._dot.setStyleSheet("color: #58a6ff;")
+            self._dot.setText("●")
+        else:
+            self._frame.setStyleSheet(
+                "#fwRow { background: #161b22; border: 1px solid #30363d; border-radius: 6px; }"
+            )
+            self._name_lbl.setStyleSheet("color: #e6edf3;")
+            self._desc_lbl.setStyleSheet("color: #6e7681;")
+            self._dot.setStyleSheet("color: #484f58;")
+            self._dot.setText("○")
+
+    def mousePressEvent(self, event: object) -> None:  # noqa: N802
+        self.set_selected(True)
+        if callable(self._on_select):
+            self._on_select(self.key)
 
 
 class StepFramework(BaseStep):
     def __init__(self, state: StateManager) -> None:
-        self._selector: CardSelector | None = None
-        self._detail: DetailPanel | None = None
-        self._warning: QLabel | None = None
+        self._rows: list[_FwRow] = []
+        self._warning_lbl: QLabel | None = None
+        self._list_layout: QVBoxLayout | None = None
         super().__init__(state, tr("step_framework"), tr("sub_framework"))
         state.config_changed.connect(self._refresh_options)
 
     def _build_content(self) -> None:
-        self._warning = QLabel("")
-        self._warning.setStyleSheet("color: #d29922; font-size: 11px; font-weight: 600;")
-        self._warning.setWordWrap(True)
-        self._warning.setVisible(False)
-        self._content.addWidget(self._warning)
+        self._warning_lbl = QLabel("")
+        self._warning_lbl.setStyleSheet("color: #d29922; font-size: 11px; font-weight: 600;")
+        self._warning_lbl.setWordWrap(True)
+        self._warning_lbl.setVisible(False)
+        self._content.addWidget(self._warning_lbl)
 
-        row = QHBoxLayout()
-        row.setContentsMargins(0, 0, 0, 0)
-        row.setSpacing(0)
-
-        self._selector = CardSelector([], columns=4, compact=True)
-        self._selector.selection_changed.connect(self._on_change)
-        self._selector.hovered.connect(self._on_hover)
-        row.addWidget(self._selector, stretch=1)
-
-        self._detail = DetailPanel(width=260)
-        self._detail.show_empty()
-        row.addWidget(self._detail, stretch=0)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("""
+            QScrollArea { border: none; background: transparent; }
+            QScrollBar:vertical { width: 6px; background: #161b22; }
+            QScrollBar::handle:vertical { background: #30363d; border-radius: 3px; }
+        """)
 
         container = QWidget()
-        container.setLayout(row)
-        self._content.addWidget(container)
-        self._content.addStretch()
+        container.setStyleSheet("background: transparent;")
+        self._list_layout = QVBoxLayout(container)
+        self._list_layout.setContentsMargins(2, 2, 8, 2)
+        self._list_layout.setSpacing(5)
+        scroll.setWidget(container)
+        self._content.addWidget(scroll, stretch=1)
+
         self._refresh_options(self._state.config)
 
-    @pyqtSlot(object)
-    def _refresh_options(self, config) -> None:  # type: ignore[override]
-        if self._selector is None:
+    def _refresh_options(self, config: object) -> None:
+        if self._list_layout is None:
             return
-        lang = config.language
-        entries = _FW_MAP.get(lang, [])
-        opts = [
-            CardOption(key, label, "", icon, key)
-            for key, label, icon in entries
-        ]
-        self._selector.set_options(opts)
-        if self._detail:
-            self._detail.show_empty()
 
-    def _on_hover(self, key: str) -> None:
-        if not key or self._detail is None:
-            return
-        if key == "none":
-            self._detail.update(title="No framework", description="Vanilla — no framework scaffolding.")
-            return
-        # Find label and icon
-        lang = self._state.config.language
+        lang = str(getattr(config, "language", "python"))
         entries = _FW_MAP.get(lang, [])
-        label, icon = key, ""
-        for k, lbl, ico in entries:
-            if k == key:
-                label, icon = lbl, ico
-                break
-        desc = _FW_DESC.get(key, "")
-        warning = check_framework_lang_compat(key, lang)
-        if warning:
-            desc = f"⚠ {warning}\n\n{desc}"
-        self._detail.update(icon=icon, title=label, description=desc)
 
-    def _on_change(self, keys: list[str]) -> None:
-        if not keys:
+        for row in self._rows:
+            self._list_layout.removeWidget(row)
+            row.deleteLater()
+        self._rows.clear()
+
+        # Remove stretch if any
+        while self._list_layout.count():
+            item = self._list_layout.takeAt(0)
+            if item is not None and item.widget() is not None:
+                item.widget().deleteLater()  # type: ignore[union-attr]
+
+        if not entries:
+            empty = QLabel(f"Aucun framework répertorié pour « {lang} ».")
+            empty.setStyleSheet("color: #8b949e; font-size: 11px; padding: 8px;")
+            self._list_layout.addWidget(empty)
             return
-        key = keys[0]
+
+        for key, name, icon, desc in entries:
+            row = _FwRow(key, icon, name, desc, self._on_select)
+            self._rows.append(row)
+            self._list_layout.addWidget(row)
+
+        self._list_layout.addStretch()
+
+    def _on_select(self, key: str) -> None:
+        for row in self._rows:
+            if row.key != key:
+                row.set_selected(False)
+
         lang = self._state.config.language
         warning = check_framework_lang_compat(key, lang)
-        if self._warning:
-            self._warning.setText(f"⚠  {warning}" if warning else "")
-            self._warning.setVisible(bool(warning))
+        if self._warning_lbl:
+            self._warning_lbl.setText(f"⚠  {warning}" if warning else "")
+            self._warning_lbl.setVisible(bool(warning))
+
         self._state.update_config(framework=key)

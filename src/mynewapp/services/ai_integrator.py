@@ -12,7 +12,7 @@ class AiIntegrator:
     """Provides AI-powered suggestions via Claude API."""
 
     def __init__(self) -> None:
-        self._client = None
+        self._client: object = None
 
     def is_available(self) -> bool:
         return bool(os.getenv("ANTHROPIC_API_KEY"))
@@ -87,12 +87,13 @@ class AiIntegrator:
         import anthropic
         if self._client is None:
             self._client = anthropic.Anthropic()
-        msg = self._client.messages.create(
+        client: anthropic.Anthropic = self._client  # type: ignore[assignment]
+        msg = client.messages.create(
             model="claude-haiku-4-5-20251001",
             max_tokens=512,
             messages=[{"role": "user", "content": prompt}],
         )
-        return msg.content[0].text
+        return str(msg.content[0].text)  # type: ignore[union-attr]
 
     def _build_library_prompt(self, config: ProjectConfig) -> str:
         return (
@@ -107,7 +108,8 @@ class AiIntegrator:
         match = re.search(r"\[.*?\]", text, re.DOTALL)
         if match:
             try:
-                return json.loads(match.group())
+                result = json.loads(match.group())
+                return list(result) if isinstance(result, list) else []
             except json.JSONDecodeError:
                 pass
         return []

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import QEvent, Qt, pyqtSignal
+from PyQt6.QtCore import QEvent, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QCursor, QFont
 from PyQt6.QtWidgets import QFrame, QGridLayout, QLabel, QVBoxLayout, QWidget
 
@@ -47,13 +47,13 @@ class CardSelector(QWidget):
 
     def _build(self) -> None:
         # Clear existing
-        if self.layout():
-            while self.layout().count():
-                item = self.layout().takeAt(0)
-                if item.widget():
-                    item.widget().deleteLater()
-            old = self.layout()
-            QWidget().setLayout(old)
+        existing = self.layout()
+        if existing is not None:
+            while existing.count():
+                item = existing.takeAt(0)
+                if item is not None and item.widget() is not None:
+                    item.widget().deleteLater()  # type: ignore[union-attr]
+            QWidget().setLayout(existing)
 
         grid = QGridLayout(self)
         grid.setSpacing(8)
@@ -103,9 +103,9 @@ class CardSelector(QWidget):
         self._apply_card_style(card, False, False)
         return card
 
-    def eventFilter(self, obj: object, event: QEvent) -> bool:  # noqa: N802
-        if isinstance(obj, QFrame) and hasattr(obj, "_opt_key"):
-            key = obj._opt_key  # type: ignore[attr-defined]
+    def eventFilter(self, obj: QObject | None, event: QEvent | None) -> bool:  # noqa: N802
+        if isinstance(obj, QFrame) and hasattr(obj, "_opt_key") and event is not None:
+            key = obj._opt_key
             detail = obj._detail_key  # type: ignore[attr-defined]
             if event.type() == QEvent.Type.Enter:
                 if key not in self._disabled:

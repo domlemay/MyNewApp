@@ -30,7 +30,7 @@ class GitHubDeviceFlow:
     def has_client_id(self) -> bool:
         return bool(self._client_id)
 
-    def start(self) -> dict:
+    def start(self) -> dict[str, object]:
         """Step 1: request device code. Returns {device_code, user_code, verification_uri, interval}."""
         if not self._client_id:
             raise RuntimeError(
@@ -44,8 +44,8 @@ class GitHubDeviceFlow:
             timeout=15,
         )
         resp.raise_for_status()
-        data = resp.json()
-        webbrowser.open(data["verification_uri"])
+        data: dict[str, object] = resp.json()
+        webbrowser.open(str(data["verification_uri"]))
         return data
 
     def poll(
@@ -84,10 +84,10 @@ class GitHubDeviceFlow:
                 raise RuntimeError("Access denied by user.")
             if "access_token" in data:
                 logger.info("GitHub Device Flow: token obtained")
-                return data["access_token"]
+                return str(data["access_token"])
         raise TimeoutError("GitHub Device Flow timed out.")
 
-    def get_user_info(self, token: str) -> dict:
+    def get_user_info(self, token: str) -> dict[str, str]:
         resp = httpx.get(
             "https://api.github.com/user",
             headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},

@@ -1,17 +1,18 @@
 from __future__ import annotations
 
-from enum import StrEnum as Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
-class ProjectType(Enum):
+class ProjectType(StrEnum):
     WEB_SPA = "web_spa"
     WEB_SSR = "web_ssr"
     WEB_API = "web_api"
     WEB_FULLSTACK = "web_fullstack"
+    WEB_MOBILE = "web_mobile"          # combo
     DESKTOP_ELECTRON = "desktop_electron"
     DESKTOP_PYQT = "desktop_pyqt"
     DESKTOP_TAURI = "desktop_tauri"
@@ -21,43 +22,82 @@ class ProjectType(Enum):
     LIBRARY = "library"
 
 
-class Language(Enum):
+class Language(StrEnum):
+    PYTHON = "python"
     TYPESCRIPT = "typescript"
     JAVASCRIPT = "javascript"
-    PYTHON = "python"
+    GO = "go"
+    KOTLIN = "kotlin"
+    SWIFT = "swift"
     JAVA = "java"
     CSHARP = "csharp"
-    DART = "dart"
     RUST = "rust"
+    DART = "dart"
+    PHP = "php"
+    RUBY = "ruby"
 
 
-class Framework(Enum):
-    # Web JS/TS
+class Framework(StrEnum):
+    # Python
+    FASTAPI = "fastapi"
+    DJANGO = "django"
+    FLASK = "flask"
+    PYQT6 = "pyqt6"
+    FASTHTML = "fasthtml"
+    LITESTAR = "litestar"
+    STREAMLIT = "streamlit"
+    TORNADO = "tornado"
+    # TypeScript / JavaScript
+    NEXTJS = "nextjs"
     REACT = "react"
     VUE = "vue"
     ANGULAR = "angular"
-    NEXTJS = "nextjs"
     NUXT = "nuxt"
     SVELTE = "svelte"
-    # Web Python
-    DJANGO = "django"
-    FLASK = "flask"
-    FASTAPI = "fastapi"
-    # Desktop
-    ELECTRON = "electron"
-    PYQT6 = "pyqt6"
-    TAURI = "tauri"
-    # Mobile
-    FLUTTER = "flutter"
-    REACT_NATIVE = "react_native"
-    # Java
+    ASTRO = "astro"
+    REMIX = "remix"
+    NESTJS = "nestjs"
+    EXPRESS = "express"
+    # Go
+    GIN = "gin"
+    ECHO = "echo"
+    FIBER = "fiber"
+    CHI = "chi"
+    # Kotlin
+    ANDROID = "android"
+    KTOR = "ktor"
+    # Java / Kotlin
     SPRING_BOOT = "spring_boot"
+    QUARKUS = "quarkus"
+    MICRONAUT = "micronaut"
+    # Swift
+    SWIFTUI = "swiftui"
+    VAPOR = "vapor"
     # C#
     DOTNET = "dotnet"
+    BLAZOR = "blazor"
+    MAUI = "maui"
+    # Rust
+    TAURI = "tauri"
+    ACTIX = "actix"
+    AXUM = "axum"
+    # Dart
+    FLUTTER = "flutter"
+    # PHP
+    LARAVEL = "laravel"
+    SYMFONY = "symfony"
+    WORDPRESS = "wordpress"
+    # Ruby
+    RAILS = "rails"
+    SINATRA = "sinatra"
+    HANAMI = "hanami"
+    # Generic
+    ELECTRON = "electron"
+    REACT_NATIVE = "react_native"
     NONE = "none"
 
 
-class ArchitectureStyle(Enum):
+class ArchitectureStyle(StrEnum):
     MVC = "mvc"
     CLEAN = "clean"
     HEXAGONAL = "hexagonal"
@@ -66,7 +106,7 @@ class ArchitectureStyle(Enum):
     FEATURE_BASED = "feature_based"
 
 
-class PackageManager(Enum):
+class PackageManager(StrEnum):
     NPM = "npm"
     YARN = "yarn"
     PNPM = "pnpm"
@@ -108,9 +148,14 @@ class AiToolsConfig(BaseModel):
     model: str = "claude-sonnet-4-6"
     include_cursor_rules: bool = True
     include_claude_md: bool = True
+    include_copilot: bool = False
+    include_codeium: bool = False
+    add_sdk: bool = True
 
 
 class ProjectConfig(BaseModel):
+    model_config = ConfigDict(use_enum_values=True)
+
     # ─── Identity ─────────────────────────────────────────────────────────────
     name: str = Field(..., min_length=1, max_length=100)
     description: str = ""
@@ -121,15 +166,15 @@ class ProjectConfig(BaseModel):
     github_private: bool = True
     github_username: str = ""
 
-    # ─── Stack ────────────────────────────────────────────────────────────────
-    project_type: ProjectType = ProjectType.WEB_API
-    language: Language = Language.PYTHON
-    framework: Framework = Framework.FASTAPI
+    # ─── Stack (plain str so any value is accepted without enum validation) ───
+    project_type: str = "web_api"
+    language: str = "python"
+    framework: str = "fastapi"
     additional_libraries: list[str] = Field(default_factory=list)
 
     # ─── Architecture ─────────────────────────────────────────────────────────
-    architecture: ArchitectureStyle = ArchitectureStyle.CLEAN
-    package_manager: PackageManager = PackageManager.UV
+    architecture: str = "clean"
+    package_manager: str = "uv"
 
     # ─── Features ─────────────────────────────────────────────────────────────
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
@@ -143,7 +188,7 @@ class ProjectConfig(BaseModel):
     open_after_creation: bool = True
     editor: str = "vscode"
 
-    # ─── Plugin data (arbitrary extra options from plugins) ───────────────────
+    # ─── Plugin data ──────────────────────────────────────────────────────────
     plugin_data: dict[str, Any] = Field(default_factory=dict)
 
     @field_validator("name")
@@ -155,6 +200,3 @@ class ProjectConfig(BaseModel):
     @property
     def project_path(self) -> Path:
         return self.output_dir / self.name
-
-    class Config:
-        use_enum_values = True

@@ -33,7 +33,7 @@ class Translator(QObject):
             self._lang = lang
             self.language_changed.emit(lang)
 
-    def tr(self, key: str, **kwargs: object) -> str:
+    def translate(self, key: str, **kwargs: object) -> str:
         text = _LOCALES.get(self._lang, {}).get(key) or _LOCALES["en"].get(key, key)
         if kwargs:
             try:
@@ -47,7 +47,7 @@ _translator = Translator()
 
 
 def tr(key: str, **kwargs: object) -> str:
-    return _translator.tr(key, **kwargs)
+    return _translator.translate(key, **kwargs)
 
 
 def set_language(lang: str) -> None:

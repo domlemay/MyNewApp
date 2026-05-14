@@ -34,7 +34,7 @@ class _DeviceFlowWorker(QThread):
         try:
             data = self._flow.start()
             self.code_ready.emit(data["user_code"], data["verification_uri"])
-            token = self._flow.poll(data["device_code"], interval=data.get("interval", 5))
+            token = self._flow.poll(str(data["device_code"]), interval=int(str(data.get("interval", 5))))
             self.token_ready.emit(token)
         except Exception as e:
             self.error.emit(str(e))
@@ -408,7 +408,7 @@ class LoginWindow(QDialog):
         self._worker.error.connect(self._on_worker_error)
         self._worker.start()
 
-    def _on_ms_done(self, info: dict) -> None:
+    def _on_ms_done(self, info: dict[str, str]) -> None:
         user = self._auth.login_or_create_oauth(
             provider="microsoft",
             provider_id=info["id"],
