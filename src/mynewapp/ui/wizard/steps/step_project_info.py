@@ -2,13 +2,17 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton,
-    QHBoxLayout, QFileDialog,
-)
 from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+)
 
 from mynewapp.core import StateManager
+
 from ._base import BaseStep
 
 

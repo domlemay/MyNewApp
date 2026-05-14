@@ -1,13 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from loguru import logger
 
-from mynewapp.models import ProjectConfig
-from mynewapp.services import GitHubService, GitService, TemplateService, EnvironmentService, AiIntegrator
 from mynewapp.core.generator import ProjectGenerator
+from mynewapp.models import ProjectConfig
+from mynewapp.services import (
+    AiIntegrator,
+    EnvironmentService,
+    GitHubService,
+    GitService,
+    TemplateService,
+)
 
 
 class ProjectBuilder:
@@ -57,7 +63,6 @@ class ProjectBuilder:
                     description=config.description,
                     private=config.github_private,
                 )
-                git_repo = self._git.init_repo.__func__ # already inited, get existing
                 import git as gitlib
                 local_repo = gitlib.Repo(project_path)
                 self._git.add_remote(local_repo, repo.clone_url)
@@ -77,9 +82,8 @@ class ProjectBuilder:
             issues.append(f"Directory already exists: {config.project_path}")
         if config.create_github_repo and not self._github.is_authenticated():
             issues.append("GitHub token is not configured.")
-        if config.create_github_repo and self._github.is_authenticated():
-            if self._github.repo_exists(config.name):
-                issues.append(f"GitHub repo '{config.name}' already exists.")
+        if config.create_github_repo and self._github.is_authenticated() and self._github.repo_exists(config.name):
+            issues.append(f"GitHub repo '{config.name}' already exists.")
         ai_warnings = self._ai.detect_inconsistencies(config)
         issues.extend(ai_warnings)
         return issues

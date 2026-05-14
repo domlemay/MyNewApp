@@ -4,7 +4,6 @@ import keyring
 from github import Github, GithubException, Repository
 from loguru import logger
 
-
 _KEYRING_SERVICE = "mynewapp"
 _KEYRING_KEY = "github_token"
 
@@ -30,7 +29,7 @@ class GitHubService:
 
     def is_authenticated(self) -> bool:
         try:
-            self._get_client().get_user().login
+            _ = self._get_client().get_user().login
             return True
         except Exception:
             return False

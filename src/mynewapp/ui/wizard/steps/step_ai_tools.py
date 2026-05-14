@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QLabel, QCheckBox, QComboBox
 from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QLabel
 
 from mynewapp.core import StateManager
+
 from ._base import BaseStep
 
 

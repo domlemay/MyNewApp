@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QFrame, QVBoxLayout, QLabel, QTextEdit, QTabWidget, QWidget
-from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QFrame, QLabel, QTextEdit, QVBoxLayout, QWidget
 
 from mynewapp.i18n import tr
 
@@ -62,7 +62,6 @@ class DetailPanel(QFrame):
         layout.addStretch()
 
     def show_empty(self) -> None:
-        hint = QLabel("← Hover a card to see details")
         self._title.setText("")
         self._icon.setText("")
         self._desc.setText("Hover over a card to see details here.")

@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
 from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from mynewapp.core import StateManager
-from mynewapp.i18n import tr, get_translator
+from mynewapp.i18n import get_translator, tr
 
 _STEP_KEYS = [
     "step_project_info",
@@ -73,7 +73,7 @@ class ProgressSidebar(QWidget):
 
     def _on_language_changed(self, _lang: str) -> None:
         self._brand_sub.setText(tr("project_builder"))
-        for i, (label, key) in enumerate(zip(self._step_labels, _STEP_KEYS)):
+        for i, (label, key) in enumerate(zip(self._step_labels, _STEP_KEYS, strict=False)):
             label.setText(f"{i + 1}. {tr(key)}")
         self._refresh(self._current)
 

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import sys
 
-from PyQt6.QtWidgets import QApplication
 from loguru import logger
+from PyQt6.QtWidgets import QApplication
 
 from mynewapp.auth.auth_service import AuthService
 from mynewapp.ui.auth.login_window import LoginWindow

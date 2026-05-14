@@ -1,5 +1,5 @@
-from .project_config import ProjectConfig, ProjectType, Language, Framework, ArchitectureStyle
 from .plugin import Plugin, PluginMetadata
+from .project_config import ArchitectureStyle, Framework, Language, ProjectConfig, ProjectType
 
 __all__ = [
     "ProjectConfig",

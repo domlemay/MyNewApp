@@ -1,16 +1,24 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize
-from PyQt6.QtGui import QFont, QCursor
+from PyQt6.QtCore import QSize, Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit,
-    QPushButton, QFrame, QStackedWidget, QWidget, QMessageBox,
+    QDialog,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
 from mynewapp.auth.auth_service import AuthService
 from mynewapp.auth.oauth.github_device import GitHubDeviceFlow
 from mynewapp.auth.oauth.microsoft import MicrosoftOAuth
-from mynewapp.i18n import tr, get_translator
+from mynewapp.i18n import tr
 
 
 class _DeviceFlowWorker(QThread):

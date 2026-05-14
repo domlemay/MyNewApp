@@ -8,7 +8,7 @@ from typing import Protocol, runtime_checkable
 
 from loguru import logger
 
-from mynewapp.models import ProjectConfig, PluginMetadata
+from mynewapp.models import PluginMetadata, ProjectConfig
 
 
 @runtime_checkable

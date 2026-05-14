@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from mynewapp.models import ProjectConfig, PluginMetadata, ProjectType
+from mynewapp.models import PluginMetadata, ProjectConfig, ProjectType
 
 
 class WebPlugin:

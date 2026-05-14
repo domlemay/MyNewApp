@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 import os
-import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, HTTPServer
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import parse_qs, urlparse
 
 import msal
-from loguru import logger
 
 _CLIENT_ID = os.getenv("MICROSOFT_OAUTH_CLIENT_ID", "")
 _AUTHORITY = "https://login.microsoftonline.com/common"

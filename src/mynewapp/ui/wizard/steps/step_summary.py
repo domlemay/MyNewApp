@@ -2,16 +2,23 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
-    QLabel, QTextEdit, QProgressBar, QHBoxLayout, QComboBox, QPushButton, QWidget,
-)
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
+    QComboBox,
+    QHBoxLayout,
+    QLabel,
+    QProgressBar,
+    QPushButton,
+    QTextEdit,
+    QWidget,
+)
 
-from mynewapp.core import StateManager, ProjectBuilder
-from mynewapp.models import ProjectConfig
-from mynewapp.services.ide_service import IdeService, DetectedIde
+from mynewapp.core import ProjectBuilder, StateManager
 from mynewapp.i18n import tr
+from mynewapp.models import ProjectConfig
+from mynewapp.services.ide_service import DetectedIde, IdeService
+
 from ._base import BaseStep
 
 

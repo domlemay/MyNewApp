@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import pyqtSignal, Qt, QEvent
-from PyQt6.QtWidgets import QWidget, QGridLayout, QVBoxLayout, QLabel, QFrame
-from PyQt6.QtGui import QFont, QCursor, QEnterEvent
+from PyQt6.QtCore import QEvent, Qt, pyqtSignal
+from PyQt6.QtGui import QCursor, QFont
+from PyQt6.QtWidgets import QFrame, QGridLayout, QLabel, QVBoxLayout, QWidget
 
 
 class CardOption:
@@ -103,7 +103,7 @@ class CardSelector(QWidget):
         self._apply_card_style(card, False, False)
         return card
 
-    def eventFilter(self, obj: object, event: QEvent) -> bool:
+    def eventFilter(self, obj: object, event: QEvent) -> bool:  # noqa: N802
         if isinstance(obj, QFrame) and hasattr(obj, "_opt_key"):
             key = obj._opt_key  # type: ignore[attr-defined]
             detail = obj._detail_key  # type: ignore[attr-defined]

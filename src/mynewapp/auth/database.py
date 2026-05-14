@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import base64
-import os
 from pathlib import Path
 
 import keyring
@@ -26,9 +25,9 @@ def _get_or_create_key() -> bytes:
 
 
 class Database:
-    _instance: "Database | None" = None
+    _instance: Database | None = None
 
-    def __new__(cls) -> "Database":
+    def __new__(cls) -> Database:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance

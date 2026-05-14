@@ -1,18 +1,23 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtWidgets import (
-    QMainWindow, QWidget, QHBoxLayout, QVBoxLayout,
-    QLabel, QPushButton, QFrame,
-)
+from PyQt6.QtCore import QSize
 from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from mynewapp.auth.auth_service import AuthService
 from mynewapp.auth.models import User
-from mynewapp.core import StateManager, ProjectBuilder
-from mynewapp.i18n import tr, get_translator, set_language, get_language
-from mynewapp.ui.wizard.wizard_controller import WizardController
+from mynewapp.core import ProjectBuilder, StateManager
+from mynewapp.i18n import get_language, get_translator, set_language, tr
 from mynewapp.ui.widgets.progress_sidebar import ProgressSidebar
+from mynewapp.ui.wizard.wizard_controller import WizardController
 
 
 class MainWindow(QMainWindow):

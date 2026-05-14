@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import os
-from typing import Generator
+from collections.abc import Generator
 
 from loguru import logger
 
@@ -78,8 +78,7 @@ class AiIntegrator:
                     ),
                 }],
             ) as stream:
-                for text in stream.text_stream:
-                    yield text
+                yield from stream.text_stream
         except Exception as e:
             logger.warning(f"AI stream failed: {e}")
             yield "Generating your project..."
@@ -103,7 +102,8 @@ class AiIntegrator:
         )
 
     def _parse_list_response(self, text: str) -> list[str]:
-        import json, re
+        import json
+        import re
         match = re.search(r"\[.*?\]", text, re.DOTALL)
         if match:
             try:

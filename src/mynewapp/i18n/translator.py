@@ -10,15 +10,15 @@ _LOCALES: dict[str, dict[str, str]] = {"en": en.T, "fr": fr.T}
 class Translator(QObject):
     language_changed = pyqtSignal(str)
 
-    _instance: "Translator | None" = None
+    _instance: Translator | None = None
 
-    def __new__(cls) -> "Translator":
+    def __new__(cls) -> Translator:
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self) -> None:
-        if hasattr(self, "_initialized"):
+        if "_initialized" in self.__dict__:
             return
         super().__init__()
         self._lang = "fr"

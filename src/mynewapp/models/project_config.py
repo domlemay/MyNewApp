@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum as Enum
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
 
-class ProjectType(str, Enum):
+class ProjectType(Enum):
     WEB_SPA = "web_spa"
     WEB_SSR = "web_ssr"
     WEB_API = "web_api"
@@ -21,7 +21,7 @@ class ProjectType(str, Enum):
     LIBRARY = "library"
 
 
-class Language(str, Enum):
+class Language(Enum):
     TYPESCRIPT = "typescript"
     JAVASCRIPT = "javascript"
     PYTHON = "python"
@@ -31,7 +31,7 @@ class Language(str, Enum):
     RUST = "rust"
 
 
-class Framework(str, Enum):
+class Framework(Enum):
     # Web JS/TS
     REACT = "react"
     VUE = "vue"
@@ -57,7 +57,7 @@ class Framework(str, Enum):
     NONE = "none"
 
 
-class ArchitectureStyle(str, Enum):
+class ArchitectureStyle(Enum):
     MVC = "mvc"
     CLEAN = "clean"
     HEXAGONAL = "hexagonal"
@@ -66,7 +66,7 @@ class ArchitectureStyle(str, Enum):
     FEATURE_BASED = "feature_based"
 
 
-class PackageManager(str, Enum):
+class PackageManager(Enum):
     NPM = "npm"
     YARN = "yarn"
     PNPM = "pnpm"

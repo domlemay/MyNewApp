@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QLabel, QCheckBox, QVBoxLayout, QGroupBox
-from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QCheckBox, QGroupBox, QVBoxLayout
 
 from mynewapp.core import StateManager
+
 from ._base import BaseStep
 
 _LIBRARY_GROUPS = {

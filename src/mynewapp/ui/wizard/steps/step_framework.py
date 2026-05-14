@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import pyqtSlot
-from PyQt6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from mynewapp.core import StateManager
-from mynewapp.core.compatibility import check_framework_lang_compat, FRAMEWORK_REQUIRES_LANG
-from mynewapp.ui.widgets.card_selector import CardSelector, CardOption
-from mynewapp.ui.widgets.detail_panel import DetailPanel
+from mynewapp.core.compatibility import check_framework_lang_compat
 from mynewapp.i18n import tr
+from mynewapp.ui.widgets.card_selector import CardOption, CardSelector
+from mynewapp.ui.widgets.detail_panel import DetailPanel
+
 from ._base import BaseStep
 
 _FW_MAP: dict[str, list[tuple[str, str, str]]] = {

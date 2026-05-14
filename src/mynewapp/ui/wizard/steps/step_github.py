@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QLabel, QLineEdit, QPushButton, QCheckBox, QHBoxLayout
+from PyQt6.QtCore import QThread, pyqtSignal
 from PyQt6.QtGui import QFont
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtWidgets import QCheckBox, QLabel, QLineEdit, QPushButton
 
 from mynewapp.core import StateManager
 from mynewapp.services import GitHubService
+
 from ._base import BaseStep
 
 

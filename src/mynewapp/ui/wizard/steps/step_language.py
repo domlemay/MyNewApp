@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from PyQt6.QtWidgets import QHBoxLayout, QWidget
+
 from mynewapp.core import StateManager
-from mynewapp.ui.widgets.card_selector import CardSelector, CardOption
-from mynewapp.ui.widgets.detail_panel import DetailPanel
 from mynewapp.i18n import tr
+from mynewapp.ui.widgets.card_selector import CardOption, CardSelector
+from mynewapp.ui.widgets.detail_panel import DetailPanel
+
 from ._base import BaseStep
 
 _LANGUAGES = [

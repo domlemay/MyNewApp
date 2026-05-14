@@ -1,13 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 from loguru import logger
 
-from mynewapp.models import ProjectConfig, ProjectType, Language, Framework
-from mynewapp.services import TemplateService, GitService, EnvironmentService
-
+from mynewapp.models import Language, ProjectConfig
+from mynewapp.services import EnvironmentService, GitService, TemplateService
 
 ProgressCallback = Callable[[str, int], None]
 
@@ -107,7 +106,6 @@ class ProjectGenerator:
         return common
 
     def _generate_source_files(self, config: ProjectConfig, path: Path) -> None:
-        ctx = self._templates.build_context(config)
         src_pkg = config.name.lower().replace("-", "_")
         if config.language == Language.PYTHON:
             (path / f"src/{src_pkg}/__init__.py").write_text(

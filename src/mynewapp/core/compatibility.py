@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from mynewapp.models.project_config import ProjectType, Language, Framework
+from mynewapp.models.project_config import Framework, Language, ProjectType
 
 # Which languages are compatible with each project type
 LANG_TYPE_COMPAT: dict[str, list[str]] = {

@@ -1,16 +1,24 @@
 from __future__ import annotations
 
-from PyQt6.QtWidgets import (
-    QLabel, QComboBox, QCheckBox, QHBoxLayout, QVBoxLayout,
-    QWidget, QTabWidget, QTextEdit, QFrame,
-)
-from PyQt6.QtGui import QFont
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QFrame,
+    QHBoxLayout,
+    QLabel,
+    QTabWidget,
+    QTextEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from mynewapp.core import StateManager
-from mynewapp.models import ArchitectureStyle
-from mynewapp.ui.widgets.card_selector import CardSelector, CardOption
 from mynewapp.i18n import tr
+from mynewapp.models import ArchitectureStyle
+from mynewapp.ui.widgets.card_selector import CardOption, CardSelector
+
 from ._base import BaseStep
 
 _ARCHS = [

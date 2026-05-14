@@ -1,18 +1,24 @@
 from __future__ import annotations
 
+import contextlib
+
 from PyQt6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QStackedWidget, QPushButton,
+    QHBoxLayout,
+    QPushButton,
+    QStackedWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
-from mynewapp.core import StateManager, ProjectBuilder
-from mynewapp.i18n import tr, get_translator
-from mynewapp.ui.wizard.steps.step_project_info import StepProjectInfo
-from mynewapp.ui.wizard.steps.step_github import StepGitHub
-from mynewapp.ui.wizard.steps.step_project_type import StepProjectType
-from mynewapp.ui.wizard.steps.step_language import StepLanguage
-from mynewapp.ui.wizard.steps.step_framework import StepFramework
-from mynewapp.ui.wizard.steps.step_libraries import StepLibraries
+from mynewapp.core import ProjectBuilder, StateManager
+from mynewapp.i18n import get_translator, tr
 from mynewapp.ui.wizard.steps.step_ai_tools import StepAiTools
+from mynewapp.ui.wizard.steps.step_framework import StepFramework
+from mynewapp.ui.wizard.steps.step_github import StepGitHub
+from mynewapp.ui.wizard.steps.step_language import StepLanguage
+from mynewapp.ui.wizard.steps.step_libraries import StepLibraries
+from mynewapp.ui.wizard.steps.step_project_info import StepProjectInfo
+from mynewapp.ui.wizard.steps.step_project_type import StepProjectType
 from mynewapp.ui.wizard.steps.step_structure import StepStructure
 from mynewapp.ui.wizard.steps.step_summary import StepSummary
 
@@ -97,10 +103,8 @@ class WizardController(QWidget):
         self._is_last = self._state.is_last_step()
         self._update_next_btn()
 
-        try:
+        with contextlib.suppress(Exception):
             self._btn_next.clicked.disconnect()
-        except Exception:
-            pass
         if self._is_last:
             self._btn_next.clicked.connect(self._on_generate)
         else:

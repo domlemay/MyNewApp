@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import time
 import webbrowser
-from typing import Callable
+from collections.abc import Callable
 
 import httpx
 from loguru import logger
