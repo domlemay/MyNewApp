@@ -46,7 +46,7 @@ class StepProjectInfo(BaseStep):
         # Output directory
         self._dir_lbl = self._add_field_label(tr("output_directory"))
         dir_row = QHBoxLayout()
-        self._dir_input = QLineEdit(str(Path.home() / "Projects"))
+        self._dir_input = QLineEdit(str(self._state.config.output_dir))
         self._dir_input.setObjectName("fieldInput")
         self._browse_btn = QPushButton(tr("browse"))
         self._browse_btn.setObjectName("secondaryBtn")
@@ -67,11 +67,19 @@ class StepProjectInfo(BaseStep):
         self._dir_input.textChanged.connect(
             lambda t: self._state.update_config(output_dir=Path(t))
         )
+        self._state.config_changed.connect(self._on_config_changed)
 
     def _browse(self) -> None:
         d = QFileDialog.getExistingDirectory(self, tr("output_directory"))
         if d:
             self._dir_input.setText(d)
+
+    def _on_config_changed(self, config: object) -> None:
+        new_dir = str(getattr(config, "output_dir", ""))
+        if new_dir and new_dir != self._dir_input.text():
+            self._dir_input.blockSignals(True)
+            self._dir_input.setText(new_dir)
+            self._dir_input.blockSignals(False)
 
     def _add_field_label(self, text: str) -> QLabel:
         lbl = QLabel(text)

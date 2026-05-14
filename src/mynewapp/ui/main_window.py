@@ -40,6 +40,12 @@ class MainWindow(QMainWindow):
         self.resize(1500, 900)
 
     def _build_ui(self) -> None:
+        # Apply saved default output dir before the wizard reads it
+        saved_dir = self._auth.get_user_pref(self._user, "default_output_dir", "")
+        if saved_dir:
+            from pathlib import Path
+            self._state.update_config(output_dir=Path(saved_dir))
+
         root = QWidget()
         self.setCentralWidget(root)
         layout = QHBoxLayout(root)
@@ -121,7 +127,14 @@ class MainWindow(QMainWindow):
 
     def _open_settings(self) -> None:
         dlg = SettingsDialog(self._auth, self._user, self)
+        dlg.settings_saved.connect(self._on_settings_saved)
         dlg.exec()
+
+    def _on_settings_saved(self) -> None:
+        from pathlib import Path
+        saved_dir = self._auth.get_user_pref(self._user, "default_output_dir", "")
+        if saved_dir:
+            self._state.update_config(output_dir=Path(saved_dir))
 
     def _apply_styles(self) -> None:
         self.setStyleSheet("""
