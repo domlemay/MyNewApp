@@ -15,7 +15,6 @@ from PyQt6.QtWidgets import (
 )
 
 from mynewapp.core import StateManager
-from mynewapp.i18n import tr
 
 from ._base import BaseStep
 
@@ -153,7 +152,7 @@ class StepLibraries(BaseStep):
         self._desc_hint: QLabel | None = None
         self._desc_reason: QLabel | None = None
         self._desc_sep: QWidget | None = None
-        super().__init__(state, tr("step_libraries"), tr("sub_libraries"))
+        super().__init__(state, "step_libraries", "sub_libraries")
         state.config_changed.connect(self._on_config_changed)
 
     def _build_content(self) -> None:

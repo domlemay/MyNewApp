@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
 )
 
 from mynewapp.core import StateManager
-from mynewapp.i18n import tr
 
 from ._base import BaseStep
 
@@ -243,7 +242,7 @@ class StepEnvVars(BaseStep):
         self._rows: list[_VarRow] = []
         self._rows_container: QWidget | None = None
         self._rows_layout: QVBoxLayout | None = None
-        super().__init__(state, tr("step_env_vars"), tr("sub_env_vars"))
+        super().__init__(state, "step_env_vars", "sub_env_vars")
         state.config_changed.connect(self._on_config_changed)
 
     def _build_content(self) -> None:

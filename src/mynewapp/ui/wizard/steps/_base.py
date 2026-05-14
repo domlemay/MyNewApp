@@ -4,6 +4,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QFrame, QLabel, QScrollArea, QVBoxLayout, QWidget
 
 from mynewapp.core import StateManager
+from mynewapp.i18n import get_translator, tr
 
 _STEP_STYLE = """
     QWidget#stepRoot { background: #0f1117; }
@@ -23,30 +24,31 @@ _STEP_STYLE = """
 
 
 class BaseStep(QWidget):
-    def __init__(self, state: StateManager, title: str, subtitle: str = "") -> None:
+    def __init__(self, state: StateManager, title_key: str, subtitle_key: str = "") -> None:
         super().__init__()
         self._state = state
+        self._title_key = title_key
+        self._subtitle_key = subtitle_key
         self.setObjectName("stepRoot")
 
         outer = QVBoxLayout(self)
         outer.setContentsMargins(40, 32, 40, 16)
         outer.setSpacing(0)
 
-        # Title block
-        lbl_title = QLabel(title)
-        lbl_title.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
-        lbl_title.setObjectName("stepTitle")
-        outer.addWidget(lbl_title)
+        self._lbl_title = QLabel(tr(title_key))
+        self._lbl_title.setFont(QFont("Segoe UI", 20, QFont.Weight.Bold))
+        self._lbl_title.setObjectName("stepTitle")
+        outer.addWidget(self._lbl_title)
 
-        if subtitle:
-            lbl_sub = QLabel(subtitle)
-            lbl_sub.setObjectName("stepSub")
-            lbl_sub.setFont(QFont("Segoe UI", 12))
-            outer.addWidget(lbl_sub)
+        self._lbl_sub: QLabel | None = None
+        if subtitle_key:
+            self._lbl_sub = QLabel(tr(subtitle_key))
+            self._lbl_sub.setObjectName("stepSub")
+            self._lbl_sub.setFont(QFont("Segoe UI", 12))
+            outer.addWidget(self._lbl_sub)
 
         outer.addSpacing(24)
 
-        # Scrollable content area
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -62,6 +64,13 @@ class BaseStep(QWidget):
 
         self.setStyleSheet(_STEP_STYLE)
         self._build_content()
+
+        get_translator().language_changed.connect(self._refresh_header)
+
+    def _refresh_header(self) -> None:
+        self._lbl_title.setText(tr(self._title_key))
+        if self._lbl_sub is not None and self._subtitle_key:
+            self._lbl_sub.setText(tr(self._subtitle_key))
 
     def _build_content(self) -> None:
         """Override in subclasses to populate content."""

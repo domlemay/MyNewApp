@@ -138,7 +138,7 @@ class StepStructure(BaseStep):
     def __init__(self, state: StateManager) -> None:
         self._rows: list[_ArchRow] = []
         self._list_layout: QVBoxLayout | None = None
-        super().__init__(state, tr("step_structure"), tr("sub_structure"))
+        super().__init__(state, "step_structure", "sub_structure")
         state.config_changed.connect(self._on_config_changed)
 
     def _build_content(self) -> None:

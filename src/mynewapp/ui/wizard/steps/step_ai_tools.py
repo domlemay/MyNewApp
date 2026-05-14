@@ -17,7 +17,6 @@ from PyQt6.QtWidgets import (
 )
 
 from mynewapp.core import StateManager
-from mynewapp.i18n import tr
 
 from ._base import BaseStep
 
@@ -75,7 +74,7 @@ class StepAiTools(BaseStep):
         self._selected_provider = "anthropic"
         self._ai_docs: list[str] = []
         self._docs_list_layout: QVBoxLayout | None = None
-        super().__init__(state, tr("step_ai_tools"), tr("sub_ai_tools"))
+        super().__init__(state, "step_ai_tools", "sub_ai_tools")
 
     def _build_content(self) -> None:
         # Master enable toggle

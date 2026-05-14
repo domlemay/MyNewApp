@@ -23,7 +23,7 @@ class StepProjectInfo(BaseStep):
         self._desc_lbl: QLabel | None = None
         self._dir_lbl: QLabel | None = None
         self._browse_btn: QPushButton | None = None
-        super().__init__(state, tr("step_project_info"), tr("sub_project_info"))
+        super().__init__(state, "step_project_info", "sub_project_info")
         get_translator().language_changed.connect(self._on_language_changed)
 
     def _build_content(self) -> None:

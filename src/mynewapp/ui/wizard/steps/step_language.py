@@ -239,7 +239,7 @@ class _LangRow(QWidget):
 class StepLanguage(BaseStep):
     def __init__(self, state: StateManager) -> None:
         self._rows: list[_LangRow] = []
-        super().__init__(state, tr("step_language"), tr("sub_language"))
+        super().__init__(state, "step_language", "sub_language")
         state.config_changed.connect(self._on_config_changed)
 
     def _build_content(self) -> None:

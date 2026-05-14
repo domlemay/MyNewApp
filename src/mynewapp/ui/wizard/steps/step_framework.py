@@ -14,7 +14,6 @@ from PyQt6.QtWidgets import (
 
 from mynewapp.core import StateManager
 from mynewapp.core.compatibility import check_framework_lang_compat
-from mynewapp.i18n import tr
 
 from ._base import BaseStep
 
@@ -258,7 +257,7 @@ class StepFramework(BaseStep):
         self._rows: list[_FwRow] = []
         self._list_layout: QVBoxLayout | None = None
         self._incompat_section_lbl: QLabel | None = None
-        super().__init__(state, tr("step_framework"), tr("sub_framework"))
+        super().__init__(state, "step_framework", "sub_framework")
         state.config_changed.connect(self._refresh_options)
 
     def _build_content(self) -> None:

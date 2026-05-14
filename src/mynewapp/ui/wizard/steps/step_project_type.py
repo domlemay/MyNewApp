@@ -147,7 +147,7 @@ class _PlatformRow(QWidget):
 class StepProjectType(BaseStep):
     def __init__(self, state: StateManager) -> None:
         self._rows: list[_PlatformRow] = []
-        super().__init__(state, tr("step_project_type"), tr("sub_project_type"))
+        super().__init__(state, "step_project_type", "sub_project_type")
 
     def _build_content(self) -> None:
         hint = QLabel(tr("platform_hint"))

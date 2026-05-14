@@ -46,7 +46,7 @@ class StepSummary(BaseStep):
         self._generated_path: str = ""
         self._ide_service = IdeService()
         self._detected_ides: list[DetectedIde] = []
-        super().__init__(state, tr("step_summary"), tr("sub_summary"))
+        super().__init__(state, "step_summary", "sub_summary")
 
     def _build_content(self) -> None:
         self._summary = QTextEdit()

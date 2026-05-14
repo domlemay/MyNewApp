@@ -28,7 +28,7 @@ class _AuthWorker(QThread):
 class StepGitHub(BaseStep):
     def __init__(self, state: StateManager, github: GitHubService) -> None:
         self._github = github
-        super().__init__(state, "GitHub Integration", "Connect your GitHub account to auto-create the repository.")
+        super().__init__(state, "step_github", "sub_github")
 
     def _build_content(self) -> None:
         # Status label
