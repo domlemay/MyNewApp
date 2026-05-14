@@ -1,0 +1,44 @@
+{% if language == 'python' %}
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+{% elif language in ('typescript', 'javascript') %}
+node_modules/
+dist/
+.next/
+.nuxt/
+out/
+build/
+{% elif language == 'rust' %}
+target/
+Cargo.lock
+{% elif language == 'java' %}
+target/
+*.class
+*.jar
+{% elif language == 'csharp' %}
+bin/
+obj/
+*.user
+{% endif %}
+
+# Common
+.env
+*.log
+logs/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+temp/
