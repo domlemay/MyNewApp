@@ -109,6 +109,24 @@ _TRIGGERS: list[tuple[list[str], list[_EnvVar]]] = [
         ],
     ),
     (
+        ["clerk"],
+        [
+            _EnvVar("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "Clerk publishable key (frontend)", "pk_test_..."),
+            _EnvVar("CLERK_SECRET_KEY", "Clerk secret key (backend)", "sk_test_..."),
+            _EnvVar("NEXT_PUBLIC_CLERK_SIGN_IN_URL", "Clerk sign-in page URL", "/sign-in", required=False),
+            _EnvVar("NEXT_PUBLIC_CLERK_SIGN_UP_URL", "Clerk sign-up page URL", "/sign-up", required=False),
+        ],
+    ),
+    (
+        ["auth0"],
+        [
+            _EnvVar("AUTH0_DOMAIN", "Auth0 domain", "your-tenant.auth0.com"),
+            _EnvVar("AUTH0_CLIENT_ID", "Auth0 client ID", "your-client-id"),
+            _EnvVar("AUTH0_CLIENT_SECRET", "Auth0 client secret", "your-client-secret"),
+            _EnvVar("AUTH0_SECRET", "Auth0 session secret (32+ chars)", "a-long-secret-value"),
+        ],
+    ),
+    (
         ["openai"],
         [
             _EnvVar("OPENAI_API_KEY", "OpenAI API key", "sk-..."),

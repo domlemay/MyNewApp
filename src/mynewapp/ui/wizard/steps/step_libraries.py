@@ -21,6 +21,9 @@ from ._base import BaseStep
 # (name, description, incompatible_with_langs, incompatible_reason)
 _LIBRARY_GROUPS: dict[str, list[tuple[str, str, list[str], str]]] = {
     "🔐  Authentification": [
+        ("Clerk",      "Auth + gestion utilisateurs clé en main. UI préconstruite, sessions, organisations, MFA. SDK officiel Next.js/React.",
+         ["go", "kotlin", "swift", "java", "csharp", "rust", "dart", "php", "ruby"],
+         "Clerk dispose de SDKs officiels pour JavaScript/TypeScript et Python uniquement."),
         ("JWT",        "JSON Web Tokens — authentification stateless, idéal pour les APIs REST.", [], ""),
         ("OAuth2",     "Protocole d'autorisation standard. Connexion via Google, GitHub, etc.", [], ""),
         ("Passport.js","Middleware d'authentification Node.js. 500+ stratégies disponibles.",
@@ -29,6 +32,7 @@ _LIBRARY_GROUPS: dict[str, list[tuple[str, str, list[str], str]]] = {
         ("NextAuth",   "Authentification complète pour Next.js. OAuth, email, credentials.",
          ["python", "go", "kotlin", "swift", "java", "csharp", "rust", "dart", "php", "ruby"],
          "NextAuth est uniquement disponible pour les projets Next.js (TypeScript/JavaScript)."),
+        ("Auth0",      "Service d'identité enterprise. SSO, MFA, RBAC, compliance (SOC2, HIPAA).", [], ""),
         ("bcrypt",     "Hachage de mots de passe sécurisé. Standard de l'industrie.", [], ""),
     ],
     "🗄️  Base de données": [
