@@ -107,6 +107,16 @@ def _which(cmd: str) -> str | None:
     return shutil.which(cmd, path=_fresh_path())
 
 
+def _run(args: list[str], cwd: Path, env: dict[str, str]) -> None:
+    """Run a CLI command, using shell=True on Windows so .cmd/.bat files work."""
+    if sys.platform == "win32":
+        subprocess.run(
+            " ".join(args), cwd=cwd, check=True, capture_output=True, env=env, shell=True
+        )
+    else:
+        subprocess.run(args, cwd=cwd, check=True, capture_output=True, env=env)
+
+
 class ProjectGenerator:
     """Generates the physical project from a ProjectConfig — batteries included."""
 
@@ -1407,13 +1417,11 @@ class ProjectGenerator:
             pkg_mgr = config.package_manager.lower()
             if pkg_mgr == "uv" and _which("uv"):
                 emit("uv venv + uv sync…", 72)
-                subprocess.run(["uv", "venv", ".venv"], cwd=path, check=True,
-                                capture_output=True, env=env)
-                subprocess.run(["uv", "sync"], cwd=path, check=True, capture_output=True, env=env)
+                _run(["uv", "venv", ".venv"], path, env)
+                _run(["uv", "sync"], path, env)
             elif _which("poetry"):
                 emit("poetry install…", 72)
-                subprocess.run(["poetry", "install"], cwd=path, check=True,
-                                capture_output=True, env=env)
+                _run(["poetry", "install"], path, env)
             else:
                 emit("pip install…", 72)
                 venv_py = (
@@ -1427,30 +1435,25 @@ class ProjectGenerator:
         elif lang in ("typescript", "javascript"):
             if _which("pnpm"):
                 emit("pnpm install…", 72)
-                subprocess.run(["pnpm", "install"], cwd=path, check=True,
-                                capture_output=True, env=env)
+                _run(["pnpm", "install"], path, env)
             elif _which("npm"):
                 emit("npm install…", 72)
-                subprocess.run(["npm", "install"], cwd=path, check=True,
-                                capture_output=True, env=env)
+                _run(["npm", "install"], path, env)
 
         elif lang == "go":
             if _which("go"):
                 emit("go mod tidy…", 72)
-                subprocess.run(["go", "mod", "tidy"], cwd=path, check=True,
-                                capture_output=True, env=env)
+                _run(["go", "mod", "tidy"], path, env)
 
         elif lang == "rust":
             if _which("cargo"):
                 emit("cargo build…", 72)
-                subprocess.run(["cargo", "build"], cwd=path, check=True,
-                                capture_output=True, env=env)
+                _run(["cargo", "build"], path, env)
 
         elif lang == "dart":
             if _which("flutter"):
                 emit("flutter pub get…", 72)
-                subprocess.run(["flutter", "pub", "get"], cwd=path, check=True,
-                                capture_output=True, env=env)
+                _run(["flutter", "pub", "get"], path, env)
 
     # ------------------------------------------------------------------ #
     # Helpers
