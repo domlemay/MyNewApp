@@ -49,59 +49,59 @@
 - [x] IdeService — détection IDE
 - [x] AppDocs/ — TODO.md, DESIGN.md, architecture.md, plugins.md, user_guide.md
 - [x] CI GitHub Actions — Python 3.11/3.12 × Ubuntu/Windows/macOS
-- [x] Mypy 0 erreur, Ruff 0 erreur, 31 tests passent
+- [x] Mypy 0 erreur, Ruff 0 erreur, 33 tests passent
 - [x] UserPrefs en DB (colonne JSON, migration inline)
 
 ---
 
-## V1 — Sprint 2 (En cours)
+## V1 — Sprint 2 ✅ Complété
 
-### Étape Sécurité — Nouveau module wizard (Step 10)
+### Étape Sécurité — Nouveau module wizard (Step 7)
 
-> Nouvelle étape insérée entre Librairies et Outils IA. Options filtrées selon le type de projet, le framework et les librairies sélectionnés.
+> Nouvelle étape insérée entre Librairies et Outils IA. Options filtrées selon le type de projet (plateformes), 3 options activées par défaut.
 
 #### Sécurité Web / API
 
-- [ ] **CORS configuré** — whitelist des origines autorisées, génère le middleware
-- [ ] **En-têtes de sécurité HTTP** — HSTS, CSP, X-Frame-Options, X-Content-Type, Permissions-Policy
-- [ ] **Rate limiting** — protection contre les abus (slowapi pour FastAPI, express-rate-limit pour Node)
-- [ ] **Protection CSRF** — tokens synchronisés pour les formulaires
-- [ ] **Protection XSS** — sanitisation output, DOMPurify côté client
-- [ ] **JWT sécurisé** — expiry court (15min access / 7j refresh), rotation des tokens, blacklist
+- [x] **CORS configuré** — génère le middleware, filtré pour plateformes web
+- [x] **En-têtes de sécurité HTTP** — HSTS, CSP, X-Frame-Options, Permissions-Policy
+- [x] **Rate limiting** — slowapi (FastAPI) / express-rate-limit, filtré web_api/fullstack
+- [x] **Protection CSRF** — filtré web_spa/ssr/fullstack
+- [x] **Protection XSS** — filtré web_spa/ssr/fullstack
+- [x] **JWT sécurisé** — expiry court, rotation, filtré web_api/fullstack
 
 #### Validation & Données
 
-- [ ] **Validation stricte des entrées** — Pydantic strict mode, Zod schemas, class-validator
-- [ ] **Transactions ACID** — wrappers SQLAlchemy `with session.begin()`, Prisma `$transaction()`
-- [ ] **Protection injection SQL** — ORM paramétré uniquement, pas de requêtes raw non typées
-- [ ] **Encryption des données sensibles** — champs critiques chiffrés (Fernet/AES-256)
-- [ ] **Sanitisation des données de sortie** — éviter la fuite d'informations dans les réponses API
+- [x] **Validation stricte des entrées** — ON par défaut, toutes plateformes
+- [x] **Transactions ACID** — toutes plateformes
+- [x] **Protection injection SQL** — ON par défaut, toutes plateformes
+- [x] **Encryption des données sensibles** — toutes plateformes
+- [x] **Sanitisation des données de sortie** — toutes plateformes
 
 #### Contrôle d'accès
 
-- [ ] **RBAC (Role-Based Access Control)** — roles admin/user/guest, décorateurs/guards
-- [ ] **Principe du moindre privilège** — accès DB limité par service, pas de compte root
-- [ ] **Tokens de rotation** — refresh token rotation + invalidation sur logout
+- [x] **RBAC** — roles admin/user/guest, filtré web_api/fullstack, génère `roles.py`
+- [x] **Principe du moindre privilège** — toutes plateformes
+- [x] **Tokens de rotation** — filtré web_api/fullstack
 
 #### Infrastructure & Opérations
 
-- [ ] **Secrets via variables d'environnement** — aucun secret hardcodé, .env obligatoire
-- [ ] **Journalisation des événements de sécurité** — audit log (qui, quoi, quand, IP)
-- [ ] **Docker non-root** — USER non-privileged dans Dockerfile
-- [ ] **Dependabot / Snyk CI** — scan vulnérabilités automatique dans le pipeline CI
-- [ ] **HTTPS enforced** — redirect HTTP → HTTPS en production
+- [x] **Secrets via variables d'environnement** — ON par défaut, toutes plateformes
+- [x] **Journalisation des événements de sécurité** — AuditLog model généré si activé
+- [x] **Docker non-root** — `USER` directive dans Dockerfile si activé
+- [x] **Dependabot** — `.github/dependabot.yml` généré automatiquement
+- [x] **HTTPS enforced** — filtré plateformes web
 
 #### Mobile (si plateforme mobile)
 
-- [ ] **Certificate pinning** — validation du certificat serveur
-- [ ] **Keychain / Keystore** — stockage sécurisé des secrets sur appareil
-- [ ] **Biométrie** — Touch ID / Face ID / fingerprint intégré
+- [x] **Certificate pinning** — filtré mobile_crossplatform/native
+- [x] **Keychain / Keystore** — filtré mobile
+- [x] **Biométrie** — Touch ID / Face ID, filtré mobile
 
 ---
 
 ### Génération complète — Batteries Included
 
-> Objectif : après génération, on ouvre l'IDE et on code directement. Aucune configuration manuelle.
+> Après génération, on ouvre l'IDE et on code directement. Aucune configuration manuelle.
 
 #### Vérification des prérequis
 
@@ -111,75 +111,79 @@
 
 #### Gestionnaire de packages
 
-- [ ] **Python : `uv`** — `uv venv .venv`, `uv pip install -e ".[dev]"`, lockfile `uv.lock`
-- [ ] **JavaScript/TypeScript : `pnpm`** par défaut, `npm` en fallback
-- [ ] **Go : `go mod init` + `go mod tidy`**
-- [ ] **Rust : `cargo init` + dépendances dans `Cargo.toml`**
-- [ ] **Dart/Flutter : `flutter create --org` + `flutter pub get`**
+- [x] **Python : `uv`** — `uv venv .venv`, `uv pip install -e ".[dev]"`, lockfile `uv.lock`
+- [x] **JavaScript/TypeScript : `pnpm`** par défaut, `npm` en fallback
+- [x] **Go : `go mod init` + `go mod tidy`**
+- [x] **Rust : `cargo init` + dépendances dans `Cargo.toml`**
+- [x] **Dart/Flutter : `flutter create --org` + `flutter pub get`**
 - [ ] **Kotlin/Android : `gradle wrapper`**
 
 #### Templates riches par framework
 
-- [ ] **FastAPI** — `app/main.py`, `routers/`, `models/`, `schemas/`, `middleware/`, `dependencies/`, `core/config.py`
-- [ ] **Django** — `manage.py`, `settings/base.py+dev.py+prod.py`, `apps/`, `urls.py`
-- [ ] **Flask** — application factory, blueprints, extensions init
-- [ ] **Next.js 15 (App Router)** — `app/`, `components/`, `lib/`, `middleware.ts`, API routes
-- [ ] **React (Vite)** — `src/`, router, store Zustand optionnel
-- [ ] **NestJS** — modules, controllers, services, DTOs, guards
+- [x] **FastAPI** — `app/main.py`, `routers/`, `models/`, `schemas/`, `middleware/`, `dependencies/`, `core/config.py`, CORS + rate limiting + RBAC selon SecurityConfig
+- [x] **Django** — `manage.py`, `settings/base+dev+prod.py`, `apps/`, `urls.py`
+- [x] **Flask** — application factory, blueprints, extensions init
+- [x] **Next.js 15 (App Router)** — `app/`, `components/`, `lib/`, `middleware.ts`, API routes
+- [x] **NestJS** — modules, controllers, services, DTOs, guards
+- [x] **Gin/Echo (Go)** — `handlers/`, `middleware/`, `models/`, `config/`
+- [x] **Rust (Axum/Actix)** — `src/main.rs`, routes, handlers
+- [x] **Flutter** — `lib/main.dart`, `screens/`, `widgets/`, `services/`, `models/`
+- [x] **Express / React (Vite) / Node** — templates génériques via `_gen_node_sources()`
 - [ ] **FastHTML** — `app.py` + routes + composants
-- [ ] **Express** — `router/`, `middleware/`, `controllers/`, `app.ts`
-- [ ] **Gin/Echo (Go)** — `handlers/`, `middleware/`, `models/`, `config/`
 - [ ] **Tauri** — `src-tauri/src/main.rs` + `frontend/` intégré
 - [ ] **PyQt6 Desktop** — `MainWindow`, `ui/`, `core/`, `services/`, `assets/`
 
 #### Fichiers générés automatiquement
 
-- [ ] **`.env` réel** — pré-rempli avec les variables définies dans le wizard (valeurs exemple)
-- [ ] **`.env.example`** — version sans valeurs sensibles pour le dépôt
-- [ ] **`.gitignore`** adapté au langage/framework
-- [ ] **`.vscode/settings.json`** — formatters, linters, python.defaultInterpreter
-- [ ] **`.vscode/extensions.json`** — extensions recommandées selon le stack
-- [ ] **`.editorconfig`** — indentation, charset, trailing newlines
-- [ ] **`ruff.toml` / `.eslintrc.json` / `golangci.yml`** — linter configuré selon langage
-- [ ] **`.prettierrc`** — formatage JS/TS
-- [ ] **`Dockerfile`** multi-stage si Docker sélectionné (build + runtime non-root)
-- [ ] **`docker-compose.yml`** avec services (DB, Redis, etc.) si sélectionnés
-- [ ] **`.github/workflows/ci.yml`** — lint + test + build
-- [ ] **`pyproject.toml`** complet avec dépendances, scripts, ruff, mypy configurés
-- [ ] **`CONTRIBUTING.md`** + **`CHANGELOG.md`** initiaux
+- [x] **`.env` réel** — pré-rempli avec les variables définies dans le wizard
+- [x] **`.env.example`** — version sans valeurs sensibles pour le dépôt
+- [x] **`.gitignore`** adapté au langage/framework
+- [x] **`.vscode/settings.json`** — formatters, linters, python.defaultInterpreter
+- [x] **`.vscode/extensions.json`** — extensions recommandées selon le stack
+- [x] **`.editorconfig`** — indentation, charset, trailing newlines
+- [x] **`ruff.toml` / `.eslintrc.json`** — linter configuré selon langage
+- [x] **`.prettierrc`** — formatage JS/TS
+- [x] **`Dockerfile`** multi-stage (build + runtime, non-root si `docker_non_root`)
+- [x] **`docker-compose.yml`** avec services (DB, Redis, etc.)
+- [x] **`.github/workflows/ci.yml`** — lint + test + build (uv pour Python, pnpm pour TS)
+- [x] **`.github/dependabot.yml`** — scan vulnérabilités automatique
+- [x] **`pyproject.toml`** complet avec dépendances sécurité (slowapi, cryptography, pyjwt…)
+- [x] **`CONTRIBUTING.md`** + **`CHANGELOG.md`** initiaux
 
 #### Tests boilerplate
 
-- [ ] **Choix niveau de couverture** dans le wizard (Minimal / Standard / Complet)
-- [ ] **Minimal** : structure `tests/` vide + 1 test smoke (app démarre sans erreur)
-- [ ] **Standard** : stubs par service/module + fixtures de base
-- [ ] **Complet** : tests unitaires + intégration + E2E stubs (Playwright/Cypress)
+- [x] **Choix niveau de couverture** dans le wizard via `test_coverage_level`
+- [x] **Minimal** : structure `tests/` + 1 test smoke
+- [x] **Standard** : stubs par service/module + fixtures de base
+- [x] **Complet** : tests unitaires + intégration + E2E stubs (Playwright/Cypress)
 
 #### Gitflow automatique
 
-- [ ] **Branches créées** : `main`, `develop`, `feature/initial-setup`
+- [x] **Branches créées** : `main`, `develop`
+- [x] **Pre-commit hooks** — conventional commits hook installé après le commit initial
 - [ ] **Protection de branches** configurée dans le dépôt GitHub (si connecté)
 - [ ] **Conventional Commits** — `.commitlintrc` si demandé
-- [ ] **Pre-commit hooks** — ruff/eslint/mypy avant chaque commit
+- [ ] **feature/initial-setup** branch créée automatiquement
 
 #### Post-génération
 
-- [ ] **Ouvrir dans l'IDE** — option cochée par défaut dans Paramètres, ouvre VS Code/Cursor/PyCharm
-- [ ] **Preview arborescence** — popup avec l'arborescence complète générée avant d'ouvrir l'IDE
-- [ ] **Résumé de génération** — liste des étapes effectuées (✅ venv créé, ✅ 47 packages installés…)
+- [x] **Ouvrir dans l'IDE** — option cochée par défaut dans Paramètres, ouvre VS Code/Cursor/PyCharm
+- [x] **Preview arborescence** — dialog `_TreeDialog` avec l'arborescence complète générée
+- [x] **Résumé de génération** — messages d'étapes affichés dans la barre de progression
 
 ---
 
-### Fonctionnalités Wizard — P1
+### Fonctionnalités Wizard — Sprint 2
 
-- [ ] **Preview arborescence interactive** — voir l'arborescence du projet à générer avant de confirmer
-- [ ] **Templates prédéfinis** — "Stack React/FastAPI", "Next.js/Prisma", "FastAPI/PostgreSQL/Redis", "Flutter/Supabase", etc.
-- [ ] **Export config `.json`** — sauvegarder la configuration du wizard pour réutilisation
-- [ ] **Import config `.json`** — charger une config sauvegardée et pré-remplir le wizard
-- [ ] **Détection conflits de ports** — si plusieurs services dans `.env` utilisent le même port, avertissement
-- [ ] **Gestion de versions des configs** — historique des 10 derniers projets générés, possibilité de recharger
-- [ ] **Repomix** dans Outils IA — génère un fichier contexte de tout le repo pour les LLMs
-- [ ] **Context7** dans Outils IA — documentation à jour des librairies pour les LLMs
+- [x] **Preview arborescence interactive** — `_TreeDialog` dans l'étape Résumé
+- [x] **Export config `.json`** — `model_dump()` → fichier JSON, bouton dans Résumé
+- [x] **Import config `.json`** — JSON → `ProjectConfig(**data)` → pré-remplit le wizard
+- [x] **Détection conflits de ports** — avertissement orange si 2 vars `.env` utilisent le même port
+- [x] **Repomix** dans Outils IA — génère un fichier contexte du repo pour les LLMs
+- [x] **Context7** dans Outils IA — documentation à jour des librairies pour les LLMs
+- [x] **Répertoire de sortie par défaut** — le chemin des Paramètres pré-remplit le wizard au démarrage et en live
+- [ ] **Templates prédéfinis** — "Stack React/FastAPI", "Next.js/Prisma", "FastAPI/PostgreSQL/Redis"…
+- [ ] **Gestion de versions des configs** — historique des 10 derniers projets, possibilité de recharger
 - [ ] **I18n des templates générés** — commentaires et README dans la langue du projet
 
 ---
@@ -228,11 +232,14 @@ APPLE_PRIVATE_KEY=<contenu du fichier .p8>
 ## Phase 2 (post-V1)
 
 - `[P2]` **Ouvrir un projet existant** — importer un projet existant, le reconnaître (stack auto-détectée), ajouter des features compatibles depuis le wizard
+- `[P2]` **Checker prérequis** — détecter Python, Node, Git, Docker, `uv`, `cargo`, `go` installés avant génération
+- `[P2]` **Templates prédéfinis** — "Stack React/FastAPI", "Next.js/Prisma", "FastAPI/PostgreSQL/Redis", "Flutter/Supabase"
 - `[P2]` **Marketplace de plugins** — intégration GitHub Releases pour extensions communautaires
 - `[P2]` **Templates customisables** — créer/sauvegarder ses propres templates de projet
 - `[P2]` **"Se souvenir de moi"** — rester connecté entre les sessions (refresh token persisté)
 - `[P2]` **Popup incompatibilité Framework → "Appliquer les modifications"** automatique
 - `[P2]` **Thème clair / sombre** configurable
+- `[P2]` **Protection de branches GitHub** — configurer depuis l'app après génération
 
 ---
 

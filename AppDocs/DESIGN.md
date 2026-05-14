@@ -115,3 +115,27 @@ MainWindow
 | SendGrid | `SENDGRID_API_KEY` |
 | Twilio | `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN` |
 | JWT | `JWT_SECRET_KEY`, `JWT_ALGORITHM` |
+
+---
+
+## Décisions Sprint 2
+
+### 9. SecurityConfig comme sous-modèle Pydantic
+
+**Décision** : 21 champs booléens dans un `SecurityConfig(BaseModel)` séparé, référencé dans `ProjectConfig.security`.
+**Raison** : Isoler la config sécurité permet de sérialiser / désérialiser facilement (export/import JSON), de tester les valeurs par défaut indépendamment, et de passer l'objet au générateur sans pollution du modèle principal.
+
+### 10. Générateur batteries-included — code source réel, pas des templates Jinja2
+
+**Décision** : Les fichiers source (FastAPI `main.py`, NestJS modules, etc.) sont générés par des méthodes Python (`_gen_python_sources()`, etc.) qui construisent les chaînes de texte directement, pas via Jinja2.
+**Raison** : Le boilerplate varie fortement selon `SecurityConfig` (CORS activé ou non, RBAC ou non, rate limiting ou non) — les templates Jinja2 avec conditions imbriquées deviendraient illisibles. Des méthodes Python permettent un if/else propre et un meilleur contrôle de l'indentation.
+
+### 11. setup_hooks() après le commit initial
+
+**Décision** : Le hook conventional-commits est installé APRÈS le premier `git commit`, pas avant.
+**Raison** : Sur Windows, gitpython exécute les hooks via `bash.exe`. Si le hook est présent lors du commit initial, git le lance mais bash.exe peut échouer (problème de PATH ou CRLF), bloquant le commit. Les hooks sont destinés aux futurs développeurs du projet généré, pas au générateur lui-même.
+
+### 12. Préférence répertoire de sortie — propagation via StateManager
+
+**Décision** : `MainWindow._build_ui()` lit `default_output_dir` depuis les préférences et l'applique au `StateManager` **avant** de construire le `WizardController`. En cours de session, `_on_settings_saved()` met à jour le state, et `StepProjectInfo._on_config_changed()` synchronise le champ avec `blockSignals(True)` pour éviter la boucle infinie.
+**Raison** : Le wizard est construit après le state, donc initialiser le state en premier garantit que le champ est correctement pré-rempli dès la construction du widget, sans passer de paramètre supplémentaire à chaque étape.
