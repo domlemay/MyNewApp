@@ -284,6 +284,7 @@ class StepFramework(BaseStep):
             return
 
         lang = str(getattr(config, "language", "python"))
+        current_fw = str(getattr(config, "framework", ""))
         all_entries = _FW_MAP.get(lang, [])
 
         # Clear existing rows
@@ -312,6 +313,8 @@ class StepFramework(BaseStep):
         # Compatible frameworks first
         for key, name, icon, desc in compat_entries:
             row = _FwRow(key, icon, name, desc, self._on_select, incompatible=False)
+            if key == current_fw:
+                row.set_selected(True)
             self._rows.append(row)
             self._list_layout.addWidget(row)
 
