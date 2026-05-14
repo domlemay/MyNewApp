@@ -16,7 +16,9 @@ from PyQt6.QtWidgets import (
 )
 
 from mynewapp.auth.auth_service import AuthService
+from mynewapp.auth.oauth.apple import AppleSignIn
 from mynewapp.auth.oauth.github_device import GitHubDeviceFlow
+from mynewapp.auth.oauth.google import GoogleOAuth
 from mynewapp.auth.oauth.microsoft import MicrosoftOAuth
 from mynewapp.i18n import tr
 
@@ -51,6 +53,38 @@ class _MicrosoftWorker(QThread):
     def run(self) -> None:
         try:
             info = self._oauth.authenticate()
+            self.done.emit(info)
+        except Exception as e:
+            self.error.emit(str(e))
+
+
+class _GoogleWorker(QThread):
+    done = pyqtSignal(dict)
+    error = pyqtSignal(str)
+
+    def __init__(self, oauth: GoogleOAuth) -> None:
+        super().__init__()
+        self._oauth = oauth
+
+    def run(self) -> None:
+        try:
+            info = self._oauth.authenticate()
+            self.done.emit(info)
+        except Exception as e:
+            self.error.emit(str(e))
+
+
+class _AppleWorker(QThread):
+    done = pyqtSignal(dict)
+    error = pyqtSignal(str)
+
+    def __init__(self, signin: AppleSignIn) -> None:
+        super().__init__()
+        self._signin = signin
+
+    def run(self) -> None:
+        try:
+            info = self._signin.authenticate()
             self.done.emit(info)
         except Exception as e:
             self.error.emit(str(e))
@@ -141,11 +175,13 @@ class LoginWindow(QDialog):
         self._auth = auth
         self._gh_flow = GitHubDeviceFlow()
         self._ms_oauth = MicrosoftOAuth()
+        self._google_oauth = GoogleOAuth()
+        self._apple_signin = AppleSignIn()
         self._worker: QThread | None = None
         self._mode = "login"
         self._settings = QSettings("MyNewApp", "mynewapp")
         self.setWindowTitle("MyNewApp")
-        self.setFixedSize(QSize(440, 580))
+        self.setFixedSize(QSize(440, 640))
         self.setModal(True)
         self.setStyleSheet(_STYLE)
         self._build()
@@ -184,6 +220,22 @@ class LoginWindow(QDialog):
         ms_btn.setObjectName("oauth")
         ms_btn.clicked.connect(self._on_microsoft)
         card_layout.addWidget(ms_btn)
+
+        # Second row: Google + Apple side by side
+        oauth_row2 = QHBoxLayout()
+        oauth_row2.setSpacing(8)
+
+        google_btn = QPushButton(f"  {tr('google_login')}")
+        google_btn.setObjectName("oauth")
+        google_btn.clicked.connect(self._on_google)
+        oauth_row2.addWidget(google_btn)
+
+        apple_btn = QPushButton(f"  {tr('apple_login')}")
+        apple_btn.setObjectName("oauth")
+        apple_btn.clicked.connect(self._on_apple)
+        oauth_row2.addWidget(apple_btn)
+
+        card_layout.addLayout(oauth_row2)
 
         sep = QLabel(tr("or_continue_with"))
         sep.setObjectName("subtitle")
@@ -420,6 +472,79 @@ class LoginWindow(QDialog):
             provider_id=info["id"],
             email=info["email"],
             display_name=info["name"],
+            access_token=info.get("access_token", ""),
+        )
+        self.login_success.emit(user)
+        self.accept()
+
+    def _on_google(self) -> None:
+        if not self._google_oauth.has_credentials():
+            QMessageBox.information(
+                self,
+                "Google OAuth",
+                "Google OAuth n'est pas configuré.\n\n"
+                "Créez un projet sur console.cloud.google.com, activez l'API 'Google Sign-In', "
+                "puis définissez ces variables d'environnement :\n\n"
+                "  GOOGLE_OAUTH_CLIENT_ID=...\n"
+                "  GOOGLE_OAUTH_CLIENT_SECRET=...\n\n"
+                "Type: 'Application de bureau' (Desktop app)\n"
+                "URI de redirection autorisé: http://localhost:8482",
+            )
+            return
+        self._stack.setCurrentIndex(2)
+        self._df_status.setText("Ouverture de Google dans votre navigateur…")
+        self._df_code.setVisible(False)
+        self._worker = _GoogleWorker(self._google_oauth)
+        self._worker.done.connect(self._on_google_done)
+        self._worker.error.connect(self._on_worker_error)
+        self._worker.start()
+
+    def _on_google_done(self, info: dict[str, str]) -> None:
+        user = self._auth.login_or_create_oauth(
+            provider="google",
+            provider_id=info["id"],
+            email=info["email"],
+            display_name=info["name"],
+            avatar_url=info.get("picture", ""),
+            access_token=info.get("access_token", ""),
+        )
+        self.login_success.emit(user)
+        self.accept()
+
+    def _on_apple(self) -> None:
+        if not self._apple_signin.has_credentials():
+            QMessageBox.information(
+                self,
+                "Sign in with Apple",
+                "Sign in with Apple n'est pas configuré.\n\n"
+                "Prérequis : compte Apple Developer ($99/an).\n\n"
+                "Étapes :\n"
+                "1. Créez un Service ID sur developer.apple.com\n"
+                "   (Identifiers → Service IDs → activer 'Sign in with Apple')\n"
+                "2. Ajoutez le domaine et l'URI de redirection :\n"
+                "   http://localhost:8483\n"
+                "3. Créez une clé privée avec la capacité 'Sign in with Apple'\n"
+                "4. Définissez ces variables d'environnement :\n\n"
+                "  APPLE_SERVICE_ID=com.yourapp.signin\n"
+                "  APPLE_TEAM_ID=XXXXXXXXXX\n"
+                "  APPLE_KEY_ID=XXXXXXXXXX\n"
+                "  APPLE_PRIVATE_KEY=<contenu du fichier .p8>",
+            )
+            return
+        self._stack.setCurrentIndex(2)
+        self._df_status.setText("Ouverture d'Apple Sign In dans votre navigateur…")
+        self._df_code.setVisible(False)
+        self._worker = _AppleWorker(self._apple_signin)
+        self._worker.done.connect(self._on_apple_done)
+        self._worker.error.connect(self._on_worker_error)
+        self._worker.start()
+
+    def _on_apple_done(self, info: dict[str, str]) -> None:
+        user = self._auth.login_or_create_oauth(
+            provider="apple",
+            provider_id=info["id"],
+            email=info["email"],
+            display_name=info.get("name", info["email"].split("@")[0]),
             access_token=info.get("access_token", ""),
         )
         self.login_success.emit(user)

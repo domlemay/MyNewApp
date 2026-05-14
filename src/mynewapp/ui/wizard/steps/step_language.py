@@ -3,6 +3,8 @@ from __future__ import annotations
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
     QHBoxLayout,
     QLabel,
     QScrollArea,
@@ -30,13 +32,121 @@ _LANGUAGES: list[tuple[str, str, str]] = [
     ("ruby",       "💎", "Ruby"),
 ]
 
+# Maps language_key → {platform_key: incompatibility_reason}
+_LANG_INCOMPAT: dict[str, dict[str, str]] = {
+    "swift": {
+        "web":      "Swift n'est pas utilisé pour le web. Recommandé : TypeScript, JavaScript, Python.",
+        "api":      "Swift est rare pour les APIs backend. Recommandé : Go, Python, TypeScript, Node.js.",
+        "cli":      "Swift est principalement pour les apps Apple. Pour les CLIs : Python, Go, Rust.",
+        "library":  "Swift est principalement pour l'écosystème Apple. Pour les librairies multi-plateforme : Python, TypeScript, Go.",
+    },
+    "dart": {
+        "web":      "Dart/Flutter n'est pas standard pour le web. Recommandé : TypeScript, JavaScript.",
+        "api":      "Dart est principalement pour Flutter. Pour les APIs : Python, Go, TypeScript.",
+        "cli":      "Dart est principalement pour Flutter. Pour les CLIs : Python, Go, TypeScript, Rust.",
+    },
+    "kotlin": {
+        "web":      "Kotlin est principalement Android/JVM backend. Pour le front-end web : TypeScript ou JavaScript.",
+        "desktop":  "Kotlin/Compose Desktop existe mais reste rare. Recommandé : Python (PyQt), TypeScript (Electron).",
+    },
+    "php": {
+        "mobile":   "PHP n'est pas utilisé pour le mobile. Recommandé : Dart (Flutter), Swift, Kotlin.",
+        "desktop":  "PHP n'est pas utilisé pour les apps desktop. Recommandé : Python, TypeScript (Electron), C#.",
+        "cli":      "PHP est rare pour les CLIs. Recommandé : Python, Go, Rust, TypeScript.",
+    },
+    "ruby": {
+        "mobile":   "Ruby n'est pas utilisé pour le mobile. Recommandé : Dart (Flutter), Swift, Kotlin.",
+        "desktop":  "Ruby est rare pour le desktop. Recommandé : Python, TypeScript (Electron), C#.",
+    },
+}
+
+# Recommended alternatives shown in popup
+_LANG_ALTERNATIVES: dict[str, str] = {
+    "swift":      "TypeScript, JavaScript, Python, Go",
+    "dart":       "TypeScript, JavaScript, Python, Go",
+    "kotlin":     "TypeScript, JavaScript, Python",
+    "php":        "Python, Go, Rust, TypeScript",
+    "ruby":       "Python, TypeScript, Go",
+}
+
+
+def _get_incompat_reason(lang_key: str, platforms: list[str]) -> str | None:
+    lang_map = _LANG_INCOMPAT.get(lang_key, {})
+    for platform in platforms:
+        if platform in lang_map:
+            return lang_map[platform]
+    return None
+
+
+class _IncompatDialog(QDialog):
+    def __init__(self, lang_name: str, reason: str, alternatives: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Langage incompatible")
+        self.setMinimumWidth(380)
+        self.setStyleSheet("""
+            QDialog { background: #0f1117; }
+            QLabel { color: #c9d1d9; }
+        """)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(12)
+
+        warn_lbl = QLabel(f"⚠  {lang_name} — compatibilité limitée")
+        warn_lbl.setFont(QFont("Segoe UI", 12, QFont.Weight.Bold))
+        warn_lbl.setStyleSheet("color: #f0a500;")
+        layout.addWidget(warn_lbl)
+
+        reason_lbl = QLabel(reason)
+        reason_lbl.setFont(QFont("Segoe UI", 10))
+        reason_lbl.setWordWrap(True)
+        reason_lbl.setStyleSheet("color: #c9d1d9;")
+        layout.addWidget(reason_lbl)
+
+        if alternatives:
+            alt_lbl = QLabel(f"Recommandé : {alternatives}")
+            alt_lbl.setFont(QFont("Segoe UI", 10, QFont.Weight.Medium))
+            alt_lbl.setStyleSheet(
+                "color: #3fb950; background: #0d1117; border: 1px solid #21262d; "
+                "border-radius: 6px; padding: 8px 10px;"
+            )
+            alt_lbl.setWordWrap(True)
+            layout.addWidget(alt_lbl)
+
+        note_lbl = QLabel("Vous pouvez quand même sélectionner ce langage si vous savez ce que vous faites.")
+        note_lbl.setFont(QFont("Segoe UI", 9))
+        note_lbl.setStyleSheet("color: #6e7681;")
+        note_lbl.setWordWrap(True)
+        layout.addWidget(note_lbl)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.setStyleSheet("""
+            QPushButton {
+                background: #21262d; color: #c9d1d9; border: 1px solid #30363d;
+                border-radius: 6px; padding: 6px 16px; font-size: 12px;
+            }
+            QPushButton:hover { background: #30363d; }
+        """)
+        buttons.rejected.connect(self.accept)
+        layout.addWidget(buttons)
+
 
 class _LangRow(QWidget):
-    def __init__(self, key: str, icon: str, name: str, desc: str, on_select: object) -> None:
+    def __init__(
+        self,
+        key: str,
+        icon: str,
+        name: str,
+        desc: str,
+        on_select: object,
+        on_incompat_click: object,
+    ) -> None:
         super().__init__()
         self.key = key
         self._selected = False
+        self._incompatible = False
+        self._incompat_reason = ""
         self._on_select = on_select
+        self._on_incompat_click = on_incompat_click
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFixedHeight(64)
 
@@ -82,11 +192,16 @@ class _LangRow(QWidget):
         self._selected = selected
         self._apply_style()
 
+    def set_incompatible(self, incompatible: bool, reason: str = "") -> None:
+        self._incompatible = incompatible
+        self._incompat_reason = reason
+        self._apply_style()
+
     def set_description(self, desc: str) -> None:
         self._desc_lbl.setText(desc)
 
     def _apply_style(self) -> None:
-        if self._selected:
+        if self._selected and not self._incompatible:
             self._frame.setStyleSheet(
                 "#langRow { background: #0d419d; border: 2px solid #58a6ff; border-radius: 8px; }"
             )
@@ -94,6 +209,14 @@ class _LangRow(QWidget):
             self._desc_lbl.setStyleSheet("color: #a5c8ff;")
             self._dot.setStyleSheet("color: #58a6ff;")
             self._dot.setText("●")
+        elif self._incompatible:
+            self._frame.setStyleSheet(
+                "#langRow { background: #1a0e0e; border: 1px solid #6e1a1a; border-radius: 8px; }"
+            )
+            self._name_lbl.setStyleSheet("color: #8b949e;")
+            self._desc_lbl.setStyleSheet("color: #484f58;")
+            self._dot.setStyleSheet("color: #f0a500; font-size: 11px;")
+            self._dot.setText("⚠")
         else:
             self._frame.setStyleSheet(
                 "#langRow { background: #161b22; border: 1px solid #30363d; border-radius: 8px; }"
@@ -104,18 +227,22 @@ class _LangRow(QWidget):
             self._dot.setText("○")
 
     def mousePressEvent(self, event: object) -> None:  # noqa: N802
-        self.set_selected(True)
-        if callable(self._on_select):
-            self._on_select(self.key)
+        if self._incompatible:
+            if callable(self._on_incompat_click):
+                self._on_incompat_click(self.key, self._incompat_reason)
+        else:
+            self.set_selected(True)
+            if callable(self._on_select):
+                self._on_select(self.key)
 
 
 class StepLanguage(BaseStep):
     def __init__(self, state: StateManager) -> None:
         self._rows: list[_LangRow] = []
         super().__init__(state, tr("step_language"), tr("sub_language"))
+        state.config_changed.connect(self._on_config_changed)
 
     def _build_content(self) -> None:
-        # Two-column layout: left list + right description
         layout = QHBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(12)
@@ -137,7 +264,7 @@ class StepLanguage(BaseStep):
 
         for key, icon, name in _LANGUAGES:
             desc = tr(f"lang_{key}_desc")
-            row = _LangRow(key, icon, name, desc, self._on_select)
+            row = _LangRow(key, icon, name, desc, self._on_select, self._on_incompat_click)
             self._rows.append(row)
             col.addWidget(row)
 
@@ -184,6 +311,16 @@ class StepLanguage(BaseStep):
         self._detail_sep = sep
         dp_layout.addWidget(sep)
 
+        self._detail_incompat = QLabel("")
+        self._detail_incompat.setFont(QFont("Segoe UI", 9))
+        self._detail_incompat.setStyleSheet(
+            "color: #f0a500; background: #1a0e0e; border: 1px solid #6e1a1a; "
+            "border-radius: 6px; padding: 8px;"
+        )
+        self._detail_incompat.setWordWrap(True)
+        self._detail_incompat.setVisible(False)
+        dp_layout.addWidget(self._detail_incompat)
+
         self._detail_desc = QLabel("")
         self._detail_desc.setFont(QFont("Segoe UI", 10))
         self._detail_desc.setStyleSheet("color: #8b949e;")
@@ -204,7 +341,6 @@ class StepLanguage(BaseStep):
             if row.key != key:
                 row.set_selected(False)
 
-        # Update detail panel
         lang_data = {k: (icon, name) for k, icon, name in _LANGUAGES}
         if key in lang_data:
             icon, name = lang_data[key]
@@ -214,7 +350,41 @@ class StepLanguage(BaseStep):
             self._detail_title.setText(name)
             self._detail_title.setVisible(True)
             self._detail_sep.setVisible(True)
+            self._detail_incompat.setVisible(False)
             self._detail_desc.setText(tr(f"lang_{key}_desc"))
             self._detail_desc.setVisible(True)
 
         self._state.update_config(language=key)
+
+    def _on_incompat_click(self, key: str, reason: str) -> None:
+        lang_data = {k: (icon, name) for k, icon, name in _LANGUAGES}
+        if key not in lang_data:
+            return
+        icon, name = lang_data[key]
+        alternatives = _LANG_ALTERNATIVES.get(key, "")
+        dlg = _IncompatDialog(f"{icon} {name}", reason, alternatives, self)
+        dlg.exec()
+
+        # Show in detail panel
+        self._detail_hint.setVisible(False)
+        self._detail_icon.setText(icon)
+        self._detail_icon.setVisible(True)
+        self._detail_title.setText(name)
+        self._detail_title.setVisible(True)
+        self._detail_sep.setVisible(True)
+        self._detail_incompat.setText(f"⚠  {reason}")
+        self._detail_incompat.setVisible(True)
+        self._detail_desc.setText(tr(f"lang_{key}_desc"))
+        self._detail_desc.setVisible(True)
+
+    def _on_config_changed(self, config: object) -> None:
+        platforms: list[str] = list(getattr(config, "platforms", []) or [])
+        current_lang = str(getattr(config, "language", ""))
+
+        for row in self._rows:
+            reason = _get_incompat_reason(row.key, platforms)
+            is_incompat = reason is not None
+            row.set_incompatible(is_incompat, reason or "")
+            # If selected language just became incompatible, keep it selected but style as warning
+            if row.key == current_lang and is_incompat:
+                row.set_selected(False)

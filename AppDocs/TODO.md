@@ -14,87 +14,62 @@
 
 ## MVP en cours — Sprint actuel
 
-### UI / UX
+### UI / UX — Tous complétés ✅
 
-- [~] **Fenêtre principale plus grande** (largeur ≥ 1350px, hauteur ≥ 820px) pour éviter les scrollbars
-- [ ] **Navigation sidebar cliquable** — cliquer sur une étape dans la barre latérale saute directement à cette étape
-- [ ] **Étape Langage** — refaire en liste verticale comme Framework (avec description sous chaque option)
-- [ ] **Étape Plateforme** (ex step 3, renommée "Plateforme") :
-  - Simplifier : Site Web, Application Web, Application Mobile, Application de Bureau, CLI/Script, Librairie/Package, Autre
-  - Supports multi-sélection
-  - La question "SPA vs SSR" est posée APRÈS le choix de langage (dans l'étape Framework ou une sous-étape)
-  - Ajouter description SPA/SSR pour les 2 premiers types web
-- [ ] **Framework — section incompatible** :
-  - Les frameworks incompatibles avec les choix précédents apparaissent en bas de liste
-  - Encadré rouge pour les options non compatibles
-  - Clic → popup expliquant l'incompatibilité et les modifications requises (Phase 1 : warning + bouton Fermer)
-  - `[P2]` Option d'appliquer les modifications automatiquement depuis le popup
-- [ ] **Librairies — incompatibilité** :
-  - Librairies incompatibles avec les choix précédents : grisées
-  - Panneau de droite : afficher la RAISON d'incompatibilité AVANT la description
-- [ ] **Architecture** — refaire en liste avec :
-  - Description sous le titre de chaque option (visible sans clic)
-  - Fenêtre / panneau montrant la structure de dossiers et fichiers
-  - Masquer les architectures non compatibles (pas d'affichage, pas de message)
-  - Afficher les fichiers générés en fonction des choix (avec option de les inclure ou non)
-- [ ] **Section Paramètres** (nouvelle section accessible depuis la sidebar ou un bouton) :
-  - Changer le mot de passe
-  - Répertoire de sortie par défaut (sauvegardé par utilisateur)
-  - Intégration GitHub : déconnecter si connecté / connecter si non connecté
-  - Langue par défaut
-- [ ] **Fichier .env** :
-  - Détecter les variables d'environnement requises selon les choix de l'utilisateur
-  - Interface pour remplir les valeurs `.env` dans le wizard
-  - Pour chaque variable : brève description + lien vers le service + lien vers la doc officielle
+- [x] **Fenêtre principale plus grande** (1350×820px minimum, 1500×900 par défaut)
+- [x] **Navigation sidebar cliquable** — cliquer sur une étape saute directement à cette étape
+- [x] **Étape Langage** — liste verticale avec descriptions + incompatibilité selon la plateforme choisie
+- [x] **Étape Plateforme** — 8 plateformes simplifiées avec multi-sélection
+- [x] **Framework — section incompatible** — encadré rouge + popup d'explication
+- [x] **Librairies — incompatibilité** — options grisées + raison d'incompatibilité avant description
+- [x] **Librairies — Cloud & BaaS** — Neon, AWS, Azure, GCP, Firebase, PlanetScale, Cloudflare
+- [x] **Architecture** — liste avec description visible + arborescence au clic + filtrage par compatibilité
+- [x] **Section Paramètres** — mot de passe, répertoire de sortie, GitHub intégration
+- [x] **Fichier .env** — détection automatique + étape wizard (step 9)
+- [x] **Outils IA** — Caveman, Ruflo, import de documents (PDF/MD/Word → AIDocs/)
 
-### Authentification
+### Authentification — Tous complétés ✅
 
 - [x] Login email/mot de passe
 - [x] GitHub Device Flow
 - [x] Microsoft OAuth
-- [ ] **Google OAuth** — ajouter bouton "Se connecter avec Google"
-- [ ] **Apple Sign In** — ajouter bouton "Se connecter avec Apple"
-- [ ] **Mémoriser l'email** dans la barre de saisie (localStorage-style, sauvegarde dans la DB locale)
-- [ ] **"Se souvenir de moi"** — option pour rester connecté entre les sessions
+- [x] **Google OAuth** — bouton + flow browser redirect (local server port 8482)
+- [x] **Apple Sign In** — bouton + flow browser redirect (local server port 8483, POST form_post)
+- [x] **Mémoriser l'email** — QSettings persiste le dernier email, pré-rempli à l'ouverture
 
-### Librairies — ajouts de contenu
+> **Note Google/Apple** : Ces deux providers nécessitent une configuration préalable (credentials OAuth App). Un message d'aide s'affiche si non configuré. Voir section Configuration ci-dessous.
 
-- [ ] **Cloud & BaaS** — ajouter groupe dans la section Librairies :
-  - Neon (PostgreSQL serverless)
-  - Supabase (déjà présent, vérifier)
-  - AWS SDK (boto3 / AWS SDK JS)
-  - Azure SDK
-  - Google Cloud SDK
-  - Firebase / Firestore
-  - PlanetScale
-  - Cloudflare Workers KV
-- [ ] **Vérifier** que Neon, Supabase, etc. sont correctement placés (BaaS vs DB vs ORM)
+---
 
-### Outils IA — intégration avancée
+## Configuration OAuth requise
 
-- [ ] **Import de documents de référence IA** :
-  - Interface dans l'étape "Outils IA" pour importer PDF, `.md`, `.docx`, `.txt`
-  - Les fichiers sont copiés dans `AIDocs/` du projet généré
-  - Ce dossier est référencé dans `CLAUDE.md`, `.cursorrules`, etc.
-- [ ] **Intégration Caveman** (`github.com/JuliusBrussee/caveman`) :
-  - Option pour inclure le skill Caveman dans le projet (réduit ~75% des tokens de sortie IA)
-  - Génère le fichier `.claude/commands/caveman.md` ou équivalent selon la cible
-  - Options : `lite`, `full`, `ultra`, `wenyan`
-- [ ] **Intégration Ruflo** (`github.com/ruvnet/ruflo`) :
-  - Option pour inclure Ruflo (multi-agent orchestration pour Claude Code)
-  - Path A (lite) : slash commands uniquement
-  - Path B (CLI) : installation complète avec hooks, MCP server, 98 agents
-- [ ] **Autres outils IA populaires** à considérer :
-  - Aider (déjà dans la liste fichiers de config)
-  - Continue (déjà dans la liste)
-  - Repomix (génère un fichier contexte de tout le repo pour les LLMs)
-  - Context7 (documentation up-to-date pour les LLMs)
-  - Sweep AI (code review automatique)
+### Google OAuth
 
-### Traductions / i18n
+1. Aller sur [console.cloud.google.com](https://console.cloud.google.com)
+2. Créer un projet → API & Services → Identifiants
+3. Créer un ID client OAuth 2.0 → Type : **Application de bureau**
+4. URI de redirection autorisé : `http://localhost:8482`
+5. Variables d'environnement :
 
-- [ ] **Corriger** "Output Directory" → "Répertoire de sortie" dans `fr.py`
-- [ ] **Vérifier** toutes les traductions françaises des nouvelles sections
+```env
+GOOGLE_OAUTH_CLIENT_ID=...
+GOOGLE_OAUTH_CLIENT_SECRET=...
+```
+
+### Apple Sign In
+
+1. Compte Apple Developer requis ($99/an)
+2. Créer un **Service ID** (pas App ID) sur developer.apple.com
+3. Activer "Sign in with Apple" → ajouter domaine + redirect : `http://localhost:8483`
+4. Créer une **clé privée** avec capacité "Sign in with Apple"
+5. Variables d'environnement :
+
+```env
+APPLE_SERVICE_ID=com.yourapp.signin
+APPLE_TEAM_ID=XXXXXXXXXX
+APPLE_KEY_ID=XXXXXXXXXX
+APPLE_PRIVATE_KEY=<contenu du fichier .p8>
+```
 
 ---
 
@@ -103,17 +78,24 @@
 - [x] Scaffold initial du projet (PyQt6, Pydantic v2, pyproject.toml)
 - [x] Module i18n (Translator singleton, locales Fr/En, live switch)
 - [x] Module auth (SQLite + Fernet, AuthService, OAuth GitHub Device Flow, Microsoft)
-- [x] LoginWindow (email/mdp + GitHub Device Flow + Microsoft OAuth)
+- [x] LoginWindow (email/mdp + GitHub + Microsoft + Google + Apple OAuth)
 - [x] Module compatibility (lang/type/framework)
 - [x] IdeService — détection IDE
 - [x] Refonte widgets (CardSelector, DetailPanel, PreviewPanel)
-- [x] Étape ProjectType — redesign avec liste scrollable + descriptions visibles
-- [x] Étape Framework — redesign avec rows, couverture 12 langages
-- [x] Étape Librairies — checkboxes groupés + panneau description hover
-- [x] Étape Outils IA — provider + fichiers config + SDKs
+- [x] Étape ProjectType (Plateforme) — 8 types simplifiés, multi-sélection
+- [x] Étape Langage — liste + descriptions + incompatibilité selon plateforme
+- [x] Étape Framework — incompatibilité avec popup d'explication
+- [x] Étape Librairies — checkboxes groupés + Cloud & BaaS + incompatibilité
+- [x] Étape Architecture — liste + arborescence + CI/CD panel + filtrage
+- [x] Étape Variables d'environnement — détection auto + saisie manuelle
+- [x] Étape Outils IA — providers + Caveman + Ruflo + import de docs
+- [x] Section Paramètres — mot de passe, répertoire, GitHub
+- [x] AppDocs/ — TODO.md, DESIGN.md, architecture.md, plugins.md, user_guide.md
 - [x] CI GitHub Actions — Python 3.11/3.12 × Ubuntu/Windows/macOS
 - [x] Mypy 0 erreur, Ruff 0 erreur, 31 tests passent
 - [x] Login au démarrage + toggle FR/EN dans MainWindow
+- [x] Mémoriser l'email (QSettings)
+- [x] UserPrefs en DB (colonne JSON, migration inline)
 
 ---
 
@@ -128,19 +110,21 @@
 - `[P2]` Mode CLI (`mynewapp generate --config config.json`)
 - `[P2]` Sync de configuration dans le cloud (multi-appareils)
 - `[P2]` Thème clair / sombre configurable
-- `[P2]` Internationalisation des templates générés
+- `[P2]` "Se souvenir de moi" — rester connecté entre les sessions
+- `[P2]` Export de config en `.json` pour réutilisation
+- `[P2]` Templates prédéfinis : "Stack React/FastAPI", "Next.js/Prisma", etc.
+- `[P2]` Détection de conflits de ports dans les variables .env
+- `[P2]` Vérification des prérequis : Python, Node, Git, Docker installés ?
+- `[P2]` Intégration Vercel/Netlify — déploiement après génération
+- `[P2]` Tests générés — choisir le niveau de couverture
+- `[P2]` Gitflow setup — branches main/develop/feature/* configurées automatiquement
 
 ---
 
 ## Éléments manquants identifiés (analyse MVP)
 
-Ces éléments n'ont pas encore été demandés mais pourraient avoir de la valeur :
-
 - **Gestion de versions** : afficher/sauvegarder des configs de projets précédents
-- **Export de config** : exporter la config en `.json` pour la réutiliser
-- **Templates prédéfinis** : "Stack React/FastAPI standard", "Stack Next.js/Prisma", etc.
 - **Détection de conflits de ports** : si plusieurs services dans `.env`
-- **Vérification des prérequis** : Python installé ? Node ? Git ? Docker ?
-- **Intégration Vercel/Netlify** : déploiement automatique après génération
-- **Tests générés** : choisir le niveau de couverture de tests dans le projet généré
-- **Gitflow setup** : branches `main`/`develop`/`feature/*` configurées automatiquement
+- **Internationalisation des templates générés**
+- **Repomix** (génère un fichier contexte de tout le repo pour les LLMs) — intégration Outils IA
+- **Context7** (documentation up-to-date pour les LLMs) — intégration Outils IA

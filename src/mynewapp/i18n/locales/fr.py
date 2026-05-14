@@ -217,6 +217,8 @@ T: dict[str, str] = {
     "or_continue_with": "ou continuer avec",
     "github_login": "GitHub",
     "microsoft_login": "Microsoft",
+    "google_login": "Google",
+    "apple_login": "Apple",
     "no_account": "Pas encore de compte?",
     "have_account": "Déjà un compte?",
     "sign_up": "S'inscrire",
