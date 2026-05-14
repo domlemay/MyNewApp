@@ -85,6 +85,9 @@ class PrerequisitesService:
 
         statuses: list[ToolStatus] = []
 
+        # git is the only truly critical tool — it's used for init_repo + commit
+        # All other tools are needed only for _install_deps (wrapped in try/except),
+        # so their absence won't prevent file generation.
         statuses.append(self._check(
             "git", ["--version"], label="Git",
             critical=True, url="https://git-scm.com/downloads",
@@ -93,7 +96,7 @@ class PrerequisitesService:
         if lang == "python":
             statuses.append(self._check(
                 "python", ["--version"], label="Python",
-                critical=True, url="https://python.org/downloads", alt="python3",
+                critical=False, url="https://python.org/downloads", alt="python3",
             ))
             if pkg_mgr == "uv":
                 statuses.append(self._check(
@@ -104,7 +107,7 @@ class PrerequisitesService:
         elif lang in ("javascript", "typescript"):
             statuses.append(self._check(
                 "node", ["--version"], label="Node.js",
-                critical=True, url="https://nodejs.org",
+                critical=False, url="https://nodejs.org",
             ))
             statuses.append(self._check(
                 "pnpm", ["--version"], label="pnpm",
@@ -114,19 +117,19 @@ class PrerequisitesService:
         elif lang == "go":
             statuses.append(self._check(
                 "go", ["version"], label="Go",
-                critical=True, url="https://go.dev/doc/install",
+                critical=False, url="https://go.dev/doc/install",
             ))
 
         elif lang == "rust":
             statuses.append(self._check(
                 "cargo", ["--version"], label="Cargo (Rust)",
-                critical=True, url="https://rustup.rs",
+                critical=False, url="https://rustup.rs",
             ))
 
         elif lang == "dart":
             statuses.append(self._check(
                 "flutter", ["--version"], label="Flutter SDK",
-                critical=True, url="https://flutter.dev/docs/get-started/install",
+                critical=False, url="https://flutter.dev/docs/get-started/install",
             ))
 
         if needs_docker:
