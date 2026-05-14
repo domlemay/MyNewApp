@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 import sys
 from dataclasses import dataclass
@@ -34,6 +33,33 @@ def _fresh_path() -> str:
         return ";".join(parts) if parts else os.environ.get("PATH", "")
     except Exception:
         return os.environ.get("PATH", "")
+
+
+def _try_run(cmd: str, args: list[str]) -> str | None:
+    """Run a CLI command and return its first output line, or None if not found.
+
+    On Windows we use shell=True so that cmd.exe (started with the fresh PATH
+    env) can locate and execute .cmd/.bat wrappers like pnpm.cmd, npm.cmd, etc.
+    subprocess.run() with a bare command name uses SearchPath() which reads the
+    PARENT process's PATH — not the env we pass — so .cmd tools are invisible.
+    shell=True sidesteps this: cmd.exe receives our env and resolves everything.
+    """
+    try:
+        env = os.environ.copy()
+        env["PATH"] = _fresh_path()
+        if sys.platform == "win32":
+            result = subprocess.run(
+                f"{cmd} {' '.join(args)}",
+                capture_output=True, text=True, timeout=5, env=env, shell=True,
+            )
+        else:
+            result = subprocess.run(
+                [cmd, *args], capture_output=True, text=True, timeout=5, env=env,
+            )
+        output = (result.stdout or result.stderr).strip()
+        return output.split("\n")[0] if output else None
+    except Exception:
+        return None
 
 
 @dataclass
@@ -123,28 +149,9 @@ class PrerequisitesService:
         url: str,
         alt: str = "",
     ) -> ToolStatus:
-        path = _fresh_path()
-        found = shutil.which(cmd, path=path) or (shutil.which(alt, path=path) if alt else None)
-        if found:
-            version = self._get_version(cmd if shutil.which(cmd, path=path) else alt, args)
-            return ToolStatus(
-                name=cmd, label=label, version=version,
-                installed=True, critical=critical, install_url=url,
-            )
+        version = _try_run(cmd, args) or (_try_run(alt, args) if alt else None)
+        installed = version is not None
         return ToolStatus(
-            name=cmd, label=label, installed=False,
-            critical=critical, install_url=url,
+            name=cmd, label=label, version=version,
+            installed=installed, critical=critical, install_url=url,
         )
-
-    @staticmethod
-    def _get_version(cmd: str, args: list[str]) -> str | None:
-        try:
-            env = os.environ.copy()
-            env["PATH"] = _fresh_path()
-            result = subprocess.run(
-                [cmd, *args], capture_output=True, text=True, timeout=5, env=env
-            )
-            output = (result.stdout or result.stderr).strip()
-            return output.split("\n")[0] if output else None
-        except Exception:
-            return None
