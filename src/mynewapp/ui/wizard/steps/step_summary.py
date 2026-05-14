@@ -1,16 +1,20 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QComboBox,
+    QDialog,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QProgressBar,
     QPushButton,
     QTextEdit,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -20,6 +24,55 @@ from mynewapp.models import ProjectConfig
 from mynewapp.services.ide_service import DetectedIde, IdeService
 
 from ._base import BaseStep
+
+
+class _TreeDialog(QDialog):
+    """Shows the generated project file tree."""
+
+    def __init__(self, project_path: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Arborescence du projet")
+        self.setMinimumSize(500, 500)
+        self.setStyleSheet("QDialog { background: #0f1117; } QTextEdit { background: #161b22; color: #c9d1d9; border: 1px solid #30363d; }")
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 16, 16, 16)
+
+        lbl = QLabel(f"📁  {project_path}")
+        lbl.setFont(QFont("Segoe UI", 10, QFont.Weight.Bold))
+        lbl.setStyleSheet("color: #e6edf3;")
+        layout.addWidget(lbl)
+
+        tree = QTextEdit()
+        tree.setReadOnly(True)
+        tree.setFont(QFont("Cascadia Code", 9))
+        tree.setPlainText(_build_tree(Path(project_path)))
+        layout.addWidget(tree, stretch=1)
+
+        close_btn = QPushButton("Fermer")
+        close_btn.setStyleSheet("background: #21262d; color: #c9d1d9; border: 1px solid #30363d; border-radius: 6px; padding: 7px 18px;")
+        close_btn.clicked.connect(self.accept)
+        layout.addWidget(close_btn)
+
+
+def _build_tree(root: Path, prefix: str = "", max_depth: int = 4, current_depth: int = 0) -> str:
+    if not root.exists() or current_depth > max_depth:
+        return ""
+    lines: list[str] = []
+    try:
+        entries = sorted(root.iterdir(), key=lambda p: (p.is_file(), p.name))
+    except PermissionError:
+        return ""
+    for i, entry in enumerate(entries):
+        if entry.name.startswith(".") and entry.name not in (".env", ".gitignore", ".vscode", ".editorconfig"):
+            continue
+        connector = "└── " if i == len(entries) - 1 else "├── "
+        lines.append(f"{prefix}{connector}{entry.name}")
+        if entry.is_dir():
+            extension = "    " if i == len(entries) - 1 else "│   "
+            sub = _build_tree(entry, prefix + extension, max_depth, current_depth + 1)
+            if sub:
+                lines.append(sub)
+    return "\n".join(lines)
 
 
 class _BuildWorker(QThread):
@@ -49,6 +102,26 @@ class StepSummary(BaseStep):
         super().__init__(state, "step_summary", "sub_summary")
 
     def _build_content(self) -> None:
+        # Export / Import config buttons
+        config_row = QHBoxLayout()
+        config_row.setContentsMargins(0, 0, 0, 4)
+        config_row.setSpacing(8)
+
+        export_btn = QPushButton("⬇  Exporter config (.json)")
+        export_btn.setObjectName("secondaryBtn")
+        export_btn.setFixedHeight(30)
+        export_btn.clicked.connect(self._export_config)
+        config_row.addWidget(export_btn)
+
+        import_btn = QPushButton("⬆  Importer config (.json)")
+        import_btn.setObjectName("secondaryBtn")
+        import_btn.setFixedHeight(30)
+        import_btn.clicked.connect(self._import_config)
+        config_row.addWidget(import_btn)
+
+        config_row.addStretch()
+        self._content.addLayout(config_row)
+
         self._summary = QTextEdit()
         self._summary.setReadOnly(True)
         self._summary.setFont(QFont("Cascadia Code", 10))
@@ -100,10 +173,38 @@ class StepSummary(BaseStep):
         self._ide_row.setVisible(False)
         self._content.addWidget(self._ide_row)
 
+        # Tree preview button (hidden until generation done)
+        self._tree_btn = QPushButton("📁  Voir l'arborescence")
+        self._tree_btn.setObjectName("secondaryBtn")
+        self._tree_btn.clicked.connect(self._show_tree)
+        self._tree_btn.setVisible(False)
+        self._content.addWidget(self._tree_btn)
+
         self._content.addStretch()
 
         self._state.config_changed.connect(self._refresh_summary)
         self._refresh_summary(self._state.config)
+
+    def _export_config(self) -> None:
+        path, _ = QFileDialog.getSaveFileName(
+            self, "Exporter la configuration", "config.json", "JSON (*.json)"
+        )
+        if path:
+            data = self._state.config.model_dump()
+            Path(path).write_text(json.dumps(data, indent=2, default=str))
+
+    def _import_config(self) -> None:
+        path, _ = QFileDialog.getOpenFileName(
+            self, "Importer une configuration", "", "JSON (*.json)"
+        )
+        if path:
+            try:
+                data = json.loads(Path(path).read_text())
+                config = ProjectConfig(**data)
+                self._state.update_config(**config.model_dump())
+            except Exception as e:
+                self._status_lbl.setText(f"Erreur import : {e}")
+                self._status_lbl.setStyleSheet("color: #f85149;")
 
     def _refresh_summary(self, config: ProjectConfig) -> None:
         lines = [
@@ -148,6 +249,7 @@ class StepSummary(BaseStep):
             self._status_lbl.setStyleSheet("color: #3fb950; font-weight: 600;")
             self._progress_bar.setValue(100)
             self._state.generation_finished.emit(True, value)
+            self._tree_btn.setVisible(True)
             self._setup_ide_selector()
         else:
             self._status_lbl.setText(tr("generation_error", error=value))
@@ -161,10 +263,18 @@ class StepSummary(BaseStep):
             for ide in self._detected_ides:
                 self._ide_combo.addItem(ide.name)
             self._ide_row.setVisible(True)
+            # Auto-open if config says so
+            if self._state.config.open_after_creation:
+                self._on_open_ide()
         else:
             self._status_lbl.setText(
                 self._status_lbl.text() + f"\n{tr('no_ide_detected')}"
             )
+
+    def _show_tree(self) -> None:
+        if self._generated_path:
+            dlg = _TreeDialog(self._generated_path, self)
+            dlg.exec()
 
     def _on_open_ide(self) -> None:
         idx = self._ide_combo.currentIndex()

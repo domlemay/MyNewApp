@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 
 from PyQt6.QtGui import QFont
@@ -16,6 +17,23 @@ from PyQt6.QtWidgets import (
 from mynewapp.core import StateManager
 
 from ._base import BaseStep
+
+_PORT_PATTERN = re.compile(r":(\d{2,5})")
+
+
+def _detect_port_conflicts(env_vars: dict[str, str]) -> list[tuple[str, str, int]]:
+    """Return list of (key1, key2, port) for conflicting ports."""
+    port_map: dict[int, str] = {}
+    conflicts: list[tuple[str, str, int]] = []
+    for key, val in env_vars.items():
+        m = _PORT_PATTERN.search(val)
+        if m:
+            port = int(m.group(1))
+            if port in port_map:
+                conflicts.append((port_map[port], key, port))
+            else:
+                port_map[port] = key
+    return conflicts
 
 
 @dataclass
@@ -242,6 +260,7 @@ class StepEnvVars(BaseStep):
         self._rows: list[_VarRow] = []
         self._rows_container: QWidget | None = None
         self._rows_layout: QVBoxLayout | None = None
+        self._conflict_lbl: QLabel | None = None
         super().__init__(state, "step_env_vars", "sub_env_vars")
         state.config_changed.connect(self._on_config_changed)
 
@@ -283,6 +302,17 @@ class StepEnvVars(BaseStep):
         self._rows_layout.addStretch()
         scroll.setWidget(self._rows_container)
         left_layout.addWidget(scroll, stretch=1)
+
+        # Port conflict warning
+        self._conflict_lbl = QLabel("")
+        self._conflict_lbl.setFont(QFont("Segoe UI", 9))
+        self._conflict_lbl.setStyleSheet(
+            "color: #f0a500; background: #1a0e0e; border: 1px solid #6e1a1a; "
+            "border-radius: 6px; padding: 8px;"
+        )
+        self._conflict_lbl.setWordWrap(True)
+        self._conflict_lbl.setVisible(False)
+        left_layout.addWidget(self._conflict_lbl)
 
         # Add custom var button
         add_btn = QPushButton("+ Ajouter une variable")
@@ -386,6 +416,19 @@ class StepEnvVars(BaseStep):
         self._rows_layout.insertWidget(self._rows_layout.count() - 1, row)
         self._rows.append(row)
 
+    def _check_port_conflicts(self) -> None:
+        if self._conflict_lbl is None:
+            return
+        current_vals = {row.key: row.value for row in self._rows if row.value}
+        conflicts = _detect_port_conflicts(current_vals)
+        if conflicts:
+            msgs = [f"⚠  Port {port} utilisé par {k1} et {k2}" for k1, k2, port in conflicts]
+            self._conflict_lbl.setText("\n".join(msgs))
+            self._conflict_lbl.setVisible(True)
+        else:
+            self._conflict_lbl.setVisible(False)
+
     def _collect(self) -> None:
         env_vars = {row.key: row.value for row in self._rows if row.value}
+        self._check_port_conflicts()
         self._state.update_config(env_vars=env_vars)

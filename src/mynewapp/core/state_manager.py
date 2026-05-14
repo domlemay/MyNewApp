@@ -21,7 +21,7 @@ class StateManager(QObject):
         super().__init__()
         self._config = ProjectConfig(name="my-project")
         self._current_step: int = 0
-        self._total_steps: int = 10
+        self._total_steps: int = 11
         self._listeners: list[Callable[..., None]] = []
 
     @property

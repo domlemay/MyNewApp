@@ -16,6 +16,7 @@ _STEP_KEYS = [
     "step_language",
     "step_framework",
     "step_libraries",
+    "step_security",
     "step_ai_tools",
     "step_structure",
     "step_env_vars",

@@ -20,6 +20,7 @@ from mynewapp.ui.wizard.steps.step_language import StepLanguage
 from mynewapp.ui.wizard.steps.step_libraries import StepLibraries
 from mynewapp.ui.wizard.steps.step_project_info import StepProjectInfo
 from mynewapp.ui.wizard.steps.step_project_type import StepProjectType
+from mynewapp.ui.wizard.steps.step_security import StepSecurity
 from mynewapp.ui.wizard.steps.step_structure import StepStructure
 from mynewapp.ui.wizard.steps.step_summary import StepSummary
 
@@ -46,6 +47,7 @@ class WizardController(QWidget):
             StepLanguage(self._state),
             StepFramework(self._state),
             StepLibraries(self._state),
+            StepSecurity(self._state),
             StepAiTools(self._state),
             StepStructure(self._state),
             StepEnvVars(self._state),

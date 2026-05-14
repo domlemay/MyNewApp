@@ -6,6 +6,7 @@ from typing import cast
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -192,6 +193,26 @@ class SettingsDialog(QDialog):
 
         layout.addWidget(gh_group)
 
+        # ── Generation section ────────────────────────────────────
+        gen_group = QGroupBox("⚡  Génération")
+        gen_group.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
+        gen_layout = QVBoxLayout(gen_group)
+        gen_layout.setSpacing(10)
+
+        saved_open_ide = self._auth.get_user_pref(self._user, "open_ide_after_generation", True)
+        self._open_ide_cb = QCheckBox("Ouvrir l'IDE après la génération")
+        self._open_ide_cb.setFont(QFont("Segoe UI", 11))
+        self._open_ide_cb.setStyleSheet("color: #c9d1d9;")
+        self._open_ide_cb.setChecked(bool(saved_open_ide))
+        gen_layout.addWidget(self._open_ide_cb)
+
+        ide_hint = QLabel("L'IDE détecté (VS Code, Cursor, PyCharm…) s'ouvre automatiquement sur le projet généré.")
+        ide_hint.setStyleSheet("color: #6e7681; font-size: 10px;")
+        ide_hint.setWordWrap(True)
+        gen_layout.addWidget(ide_hint)
+
+        layout.addWidget(gen_group)
+
         layout.addStretch()
 
         # ── Bottom buttons ────────────────────────────────────────
@@ -256,5 +277,8 @@ class SettingsDialog(QDialog):
 
     def _save(self) -> None:
         self._auth.set_user_pref(self._user, "default_output_dir", self._dir_input.text())
+        self._auth.set_user_pref(
+            self._user, "open_ide_after_generation", self._open_ide_cb.isChecked()
+        )
         self.settings_saved.emit()
         self.accept()

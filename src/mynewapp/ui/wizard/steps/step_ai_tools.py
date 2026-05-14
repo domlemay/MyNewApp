@@ -63,6 +63,21 @@ _CLAUDE_CODE_TOOLS: list[tuple[str, str, str, str]] = [
     ),
 ]
 
+_CONTEXT_TOOLS: list[tuple[str, str, str, str]] = [
+    (
+        "repomix",
+        "📦  Repomix",
+        "Génère un fichier contexte de tout le repo (repomix-output.xml/md) pour les LLMs. Un seul fichier = tout le code en contexte pour Claude, GPT, etc.",
+        "https://github.com/yamadashy/repomix",
+    ),
+    (
+        "context7",
+        "📚  Context7",
+        "Documentation à jour des librairies directement dans le contexte LLM. Plus de docs périmées, les LLMs voient la vraie API actuelle.",
+        "https://github.com/upstash/context7",
+    ),
+]
+
 
 class StepAiTools(BaseStep):
     def __init__(self, state: StateManager) -> None:
@@ -71,6 +86,7 @@ class StepAiTools(BaseStep):
         self._sdk_cbs: dict[str, QCheckBox] = {}
         self._provider_rows: dict[str, QWidget] = {}
         self._claude_code_cbs: dict[str, QCheckBox] = {}
+        self._context_tool_cbs: dict[str, QCheckBox] = {}
         self._selected_provider = "anthropic"
         self._ai_docs: list[str] = []
         self._docs_list_layout: QVBoxLayout | None = None
@@ -111,6 +127,9 @@ class StepAiTools(BaseStep):
 
         # Claude Code tools (Caveman, Ruflo)
         panel_layout.addWidget(self._build_claude_code_section())
+
+        # Context tools (Repomix, Context7)
+        panel_layout.addWidget(self._build_context_tools_section())
 
         # AI documentation import
         panel_layout.addWidget(self._build_ai_docs_section())
@@ -261,6 +280,42 @@ class StepAiTools(BaseStep):
 
         return group
 
+    def _build_context_tools_section(self) -> QGroupBox:
+        group = QGroupBox("🔍  Outils de contexte LLM")
+        group.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
+        self._style_group(group)
+        layout = QVBoxLayout(group)
+        layout.setSpacing(8)
+
+        desc = QLabel("Outils qui améliorent la qualité du contexte fourni aux LLMs.")
+        desc.setFont(QFont("Segoe UI", 9))
+        desc.setStyleSheet("color: #6e7681; margin-bottom: 2px;")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        for key, name, tooltip, _url in _CONTEXT_TOOLS:
+            row = QWidget()
+            rl = QVBoxLayout(row)
+            rl.setContentsMargins(0, 0, 0, 0)
+            rl.setSpacing(2)
+
+            cb = QCheckBox(name)
+            cb.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
+            cb.setStyleSheet("color: #c9d1d9;")
+            cb.stateChanged.connect(self._sync)
+            self._context_tool_cbs[key] = cb
+            rl.addWidget(cb)
+
+            tip = QLabel(tooltip)
+            tip.setFont(QFont("Segoe UI", 9))
+            tip.setStyleSheet("color: #6e7681; padding-left: 22px;")
+            tip.setWordWrap(True)
+            rl.addWidget(tip)
+
+            layout.addWidget(row)
+
+        return group
+
     def _build_ai_docs_section(self) -> QGroupBox:
         group = QGroupBox("📚  Documents IA (AIDocs/)")
         group.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
@@ -373,5 +428,7 @@ class StepAiTools(BaseStep):
             add_sdk=any(cb.isChecked() for cb in self._sdk_cbs.values()),
             include_caveman=self._claude_code_cbs.get("caveman", QCheckBox()).isChecked(),
             include_ruflo=self._claude_code_cbs.get("ruflo", QCheckBox()).isChecked(),
+            include_repomix=self._context_tool_cbs.get("repomix", QCheckBox()).isChecked(),
+            include_context7=self._context_tool_cbs.get("context7", QCheckBox()).isChecked(),
         )
         self._state.update_config(ai_docs=list(self._ai_docs))

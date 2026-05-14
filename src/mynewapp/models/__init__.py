@@ -1,5 +1,12 @@
 from .plugin import Plugin, PluginMetadata
-from .project_config import ArchitectureStyle, Framework, Language, ProjectConfig, ProjectType
+from .project_config import (
+    ArchitectureStyle,
+    Framework,
+    Language,
+    ProjectConfig,
+    ProjectType,
+    SecurityConfig,
+)
 
 __all__ = [
     "ProjectConfig",
@@ -7,6 +14,7 @@ __all__ = [
     "Language",
     "Framework",
     "ArchitectureStyle",
+    "SecurityConfig",
     "Plugin",
     "PluginMetadata",
 ]

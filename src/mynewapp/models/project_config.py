@@ -151,6 +151,38 @@ class AiToolsConfig(BaseModel):
     include_copilot: bool = False
     include_codeium: bool = False
     add_sdk: bool = True
+    include_repomix: bool = False
+    include_context7: bool = False
+
+
+class SecurityConfig(BaseModel):
+    # Web / API
+    cors: bool = False
+    security_headers: bool = False
+    rate_limiting: bool = False
+    csrf_protection: bool = False
+    xss_protection: bool = False
+    jwt_secure: bool = False
+    # Validation & Data
+    strict_validation: bool = True
+    acid_transactions: bool = False
+    sql_injection_protection: bool = True
+    encrypt_sensitive_fields: bool = False
+    sanitize_output: bool = False
+    # Access Control
+    rbac: bool = False
+    least_privilege: bool = False
+    token_rotation: bool = False
+    # Infrastructure
+    env_secrets_only: bool = True
+    audit_log: bool = False
+    docker_non_root: bool = False
+    dependency_scanning: bool = False
+    https_enforced: bool = False
+    # Mobile
+    certificate_pinning: bool = False
+    secure_storage: bool = False
+    biometrics: bool = False
 
 
 class ProjectConfig(BaseModel):
@@ -185,6 +217,12 @@ class ProjectConfig(BaseModel):
     cicd: CiCdConfig = Field(default_factory=CiCdConfig)
     git: GitConfig = Field(default_factory=GitConfig)
     ai_tools: AiToolsConfig = Field(default_factory=AiToolsConfig)
+    security: SecurityConfig = Field(default_factory=SecurityConfig)
+
+    # ─── Generation options ───────────────────────────────────────────────────
+    test_coverage_level: str = "standard"   # minimal | standard | complete
+    generate_docker: bool = False
+    gitflow: bool = True
 
     # ─── Setup ────────────────────────────────────────────────────────────────
     auto_install_deps: bool = True
