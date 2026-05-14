@@ -105,9 +105,9 @@
 
 #### Vérification des prérequis
 
-- [ ] **Checker prérequis** — détecter Python, Node, Git, Docker, `uv`, `cargo`, `go` installés
-- [ ] **Rapport prérequis** — popup avant génération avec statut ✅/❌ + liens d'installation
-- [ ] **Blocage si manquant** — empêcher la génération si outil critique absent
+- [x] **Checker prérequis** — `PrerequisitesService` détecte git/python/uv/node/pnpm/go/cargo/flutter/docker selon le stack
+- [x] **Rapport prérequis** — `PrerequisitesDialog` avec tableau ✅/❌, version ou lien "Installer →"
+- [x] **Blocage si manquant** — outils critiques absents → "Générer quand même" (orange), tout OK → "Générer" (vert)
 
 #### Gestionnaire de packages
 
@@ -182,7 +182,7 @@
 - [x] **Repomix** dans Outils IA — génère un fichier contexte du repo pour les LLMs
 - [x] **Context7** dans Outils IA — documentation à jour des librairies pour les LLMs
 - [x] **Répertoire de sortie par défaut** — le chemin des Paramètres pré-remplit le wizard au démarrage et en live
-- [ ] **Templates prédéfinis** — "Stack React/FastAPI", "Next.js/Prisma", "FastAPI/PostgreSQL/Redis"…
+- [x] **Templates prédéfinis** — 6 cards dans Step 1 (FastAPI/PG/Redis, Next.js/Prisma, Django REST, NestJS, Flutter/Supabase, Axum/PG) pré-remplissent la stack en un clic
 - [ ] **Gestion de versions des configs** — historique des 10 derniers projets, possibilité de recharger
 - [ ] **I18n des templates générés** — commentaires et README dans la langue du projet
 
