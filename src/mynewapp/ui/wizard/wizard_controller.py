@@ -122,6 +122,10 @@ class WizardController(QWidget):
         self._btn_next.setText(tr("generate") if self._is_last else tr("next"))
 
     def _on_generate(self) -> None:
+        from mynewapp.ui.wizard.prerequisites_dialog import PrerequisitesDialog
+        dlg = PrerequisitesDialog(self._state.config, self)
+        if dlg.exec() != PrerequisitesDialog.DialogCode.Accepted:
+            return
         summary_step = self._steps[-1]
         if hasattr(summary_step, "start_generation"):
             summary_step.start_generation()

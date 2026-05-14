@@ -34,6 +34,10 @@ T: dict[str, str] = {
     "sub_env_vars": "Set environment variables required by your stack.",
     "sub_summary": "Review your configuration before generating.",
 
+    # Quick Start templates
+    "quick_start_title": "⚡  Quick Start",
+    "quick_start_hint": "Select a template to pre-fill your stack — you can adjust everything afterwards.",
+
     # Project Info
     "project_name": "Project Name",
     "project_name_ph": "my-awesome-project",
