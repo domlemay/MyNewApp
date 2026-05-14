@@ -268,6 +268,12 @@ T: dict[str, str] = {
     "generation_starting": "Démarrage de la génération...",
     "generation_done": "Projet créé dans: {path}",
     "generation_error": "Erreur: {error}",
+    "btn_quit": "Quitter",
+    "btn_regenerate": "↺  Régénérer",
+    "btn_update_github": "⬆  Mettre à jour GitHub",
+    "github_push_success": "Projet poussé vers GitHub avec succès.",
+    "github_push_error": "Échec push GitHub : {error}",
+    "github_not_connected": "GitHub non connecté. Connectez-vous dans Paramètres.",
 
     # Auth / Login
     "login_title": "Bienvenue sur MyNewApp",

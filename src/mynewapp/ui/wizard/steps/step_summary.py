@@ -3,9 +3,11 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import git
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
+    QApplication,
     QComboBox,
     QDialog,
     QFileDialog,
@@ -180,6 +182,53 @@ class StepSummary(BaseStep):
         self._tree_btn.setVisible(False)
         self._content.addWidget(self._tree_btn)
 
+        # Post-generation action buttons (hidden until generation done)
+        self._actions_row = QWidget()
+        actions_layout = QHBoxLayout(self._actions_row)
+        actions_layout.setContentsMargins(0, 0, 0, 0)
+        actions_layout.setSpacing(8)
+
+        self._quit_btn = QPushButton(tr("btn_quit"))
+        self._quit_btn.setStyleSheet("""
+            QPushButton {
+                background: #21262d; color: #c9d1d9;
+                border: 1px solid #30363d; border-radius: 6px;
+                padding: 8px 18px; font-size: 12px;
+            }
+            QPushButton:hover { background: #30363d; }
+        """)
+        self._quit_btn.clicked.connect(self._on_quit)
+        actions_layout.addWidget(self._quit_btn)
+
+        self._regenerate_btn = QPushButton(tr("btn_regenerate"))
+        self._regenerate_btn.setStyleSheet("""
+            QPushButton {
+                background: #21262d; color: #c9d1d9;
+                border: 1px solid #30363d; border-radius: 6px;
+                padding: 8px 18px; font-size: 12px;
+            }
+            QPushButton:hover { background: #30363d; }
+        """)
+        self._regenerate_btn.clicked.connect(self._on_regenerate)
+        actions_layout.addWidget(self._regenerate_btn)
+
+        actions_layout.addStretch()
+
+        self._github_btn = QPushButton(tr("btn_update_github"))
+        self._github_btn.setStyleSheet("""
+            QPushButton {
+                background: #161b22; color: #58a6ff;
+                border: 1px solid #30363d; border-radius: 6px;
+                padding: 8px 18px; font-size: 12px;
+            }
+            QPushButton:hover { background: #1f2a3a; }
+        """)
+        self._github_btn.clicked.connect(self._on_update_github)
+        actions_layout.addWidget(self._github_btn)
+
+        self._actions_row.setVisible(False)
+        self._content.addWidget(self._actions_row)
+
         self._content.addStretch()
 
         self._state.config_changed.connect(self._refresh_summary)
@@ -230,7 +279,10 @@ class StepSummary(BaseStep):
         self._progress_bar.setVisible(True)
         self._progress_bar.setValue(0)
         self._status_lbl.setText(tr("generation_starting"))
+        self._status_lbl.setStyleSheet("")
         self._ide_row.setVisible(False)
+        self._tree_btn.setVisible(False)
+        self._actions_row.setVisible(False)
         self._state.generation_started.emit()
 
         self._worker = _BuildWorker(self._builder, config)
@@ -250,6 +302,13 @@ class StepSummary(BaseStep):
             self._progress_bar.setValue(100)
             self._state.generation_finished.emit(True, value)
             self._tree_btn.setVisible(True)
+            self._actions_row.setVisible(True)
+            # Show GitHub push button only if repo was created and GitHub is connected
+            has_github = (
+                self._state.config.create_github_repo
+                and self._builder.github.is_authenticated()
+            )
+            self._github_btn.setVisible(has_github)
             self._setup_ide_selector()
         else:
             self._status_lbl.setText(tr("generation_error", error=value))
@@ -280,3 +339,27 @@ class StepSummary(BaseStep):
         idx = self._ide_combo.currentIndex()
         if 0 <= idx < len(self._detected_ides) and self._generated_path:
             self._ide_service.open(self._detected_ides[idx], Path(self._generated_path))
+
+    def _on_quit(self) -> None:
+        app = QApplication.instance()
+        if app is not None:
+            app.quit()
+
+    def _on_regenerate(self) -> None:
+        self.start_generation()
+
+    def _on_update_github(self) -> None:
+        if not self._generated_path:
+            return
+        if not self._builder.github.is_authenticated():
+            self._status_lbl.setText(tr("github_not_connected"))
+            self._status_lbl.setStyleSheet("color: #f0a500; font-weight: 600;")
+            return
+        try:
+            repo = git.Repo(self._generated_path)
+            self._builder._git.push(repo)
+            self._status_lbl.setText(tr("github_push_success"))
+            self._status_lbl.setStyleSheet("color: #3fb950; font-weight: 600;")
+        except Exception as e:
+            self._status_lbl.setText(tr("github_push_error", error=str(e)))
+            self._status_lbl.setStyleSheet("color: #f85149; font-weight: 600;")
