@@ -7,7 +7,6 @@ import git
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
-    QApplication,
     QComboBox,
     QDialog,
     QFileDialog,
@@ -182,38 +181,7 @@ class StepSummary(BaseStep):
         self._tree_btn.setVisible(False)
         self._content.addWidget(self._tree_btn)
 
-        # Post-generation action buttons (hidden until generation done)
-        self._actions_row = QWidget()
-        actions_layout = QHBoxLayout(self._actions_row)
-        actions_layout.setContentsMargins(0, 0, 0, 0)
-        actions_layout.setSpacing(8)
-
-        self._quit_btn = QPushButton(tr("btn_quit"))
-        self._quit_btn.setStyleSheet("""
-            QPushButton {
-                background: #21262d; color: #c9d1d9;
-                border: 1px solid #30363d; border-radius: 6px;
-                padding: 8px 18px; font-size: 12px;
-            }
-            QPushButton:hover { background: #30363d; }
-        """)
-        self._quit_btn.clicked.connect(self._on_quit)
-        actions_layout.addWidget(self._quit_btn)
-
-        self._regenerate_btn = QPushButton(tr("btn_regenerate"))
-        self._regenerate_btn.setStyleSheet("""
-            QPushButton {
-                background: #21262d; color: #c9d1d9;
-                border: 1px solid #30363d; border-radius: 6px;
-                padding: 8px 18px; font-size: 12px;
-            }
-            QPushButton:hover { background: #30363d; }
-        """)
-        self._regenerate_btn.clicked.connect(self._on_regenerate)
-        actions_layout.addWidget(self._regenerate_btn)
-
-        actions_layout.addStretch()
-
+        # GitHub push button (hidden until generation done, only when GitHub connected)
         self._github_btn = QPushButton(tr("btn_update_github"))
         self._github_btn.setStyleSheet("""
             QPushButton {
@@ -224,10 +192,8 @@ class StepSummary(BaseStep):
             QPushButton:hover { background: #1f2a3a; }
         """)
         self._github_btn.clicked.connect(self._on_update_github)
-        actions_layout.addWidget(self._github_btn)
-
-        self._actions_row.setVisible(False)
-        self._content.addWidget(self._actions_row)
+        self._github_btn.setVisible(False)
+        self._content.addWidget(self._github_btn)
 
         self._content.addStretch()
 
@@ -282,7 +248,7 @@ class StepSummary(BaseStep):
         self._status_lbl.setStyleSheet("")
         self._ide_row.setVisible(False)
         self._tree_btn.setVisible(False)
-        self._actions_row.setVisible(False)
+        self._github_btn.setVisible(False)
         self._state.generation_started.emit()
 
         self._worker = _BuildWorker(self._builder, config)
@@ -302,8 +268,7 @@ class StepSummary(BaseStep):
             self._progress_bar.setValue(100)
             self._state.generation_finished.emit(True, value)
             self._tree_btn.setVisible(True)
-            self._actions_row.setVisible(True)
-            # Show GitHub push button only if repo was created and GitHub is connected
+            # GitHub push button only if repo was created and GitHub is connected
             has_github = (
                 self._state.config.create_github_repo
                 and self._builder.github.is_authenticated()
@@ -321,8 +286,14 @@ class StepSummary(BaseStep):
         if self._detected_ides:
             for ide in self._detected_ides:
                 self._ide_combo.addItem(ide.name)
+            # Pre-select preferred IDE from settings
+            preferred = self._state.config.preferred_ide
+            if preferred:
+                for i, ide in enumerate(self._detected_ides):
+                    if ide.name == preferred:
+                        self._ide_combo.setCurrentIndex(i)
+                        break
             self._ide_row.setVisible(True)
-            # Auto-open if config says so
             if self._state.config.open_after_creation:
                 self._on_open_ide()
         else:
@@ -339,14 +310,6 @@ class StepSummary(BaseStep):
         idx = self._ide_combo.currentIndex()
         if 0 <= idx < len(self._detected_ides) and self._generated_path:
             self._ide_service.open(self._detected_ides[idx], Path(self._generated_path))
-
-    def _on_quit(self) -> None:
-        app = QApplication.instance()
-        if app is not None:
-            app.quit()
-
-    def _on_regenerate(self) -> None:
-        self.start_generation()
 
     def _on_update_github(self) -> None:
         if not self._generated_path:

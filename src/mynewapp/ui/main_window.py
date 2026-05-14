@@ -40,11 +40,14 @@ class MainWindow(QMainWindow):
         self.resize(1500, 900)
 
     def _build_ui(self) -> None:
-        # Apply saved default output dir before the wizard reads it
+        # Apply saved preferences before the wizard reads them
+        from pathlib import Path
         saved_dir = self._auth.get_user_pref(self._user, "default_output_dir", "")
         if saved_dir:
-            from pathlib import Path
             self._state.update_config(output_dir=Path(saved_dir))
+        saved_ide = self._auth.get_user_pref(self._user, "preferred_ide", "")
+        if saved_ide:
+            self._state.update_config(preferred_ide=str(saved_ide))
 
         root = QWidget()
         self.setCentralWidget(root)
@@ -135,6 +138,8 @@ class MainWindow(QMainWindow):
         saved_dir = self._auth.get_user_pref(self._user, "default_output_dir", "")
         if saved_dir:
             self._state.update_config(output_dir=Path(saved_dir))
+        saved_ide = self._auth.get_user_pref(self._user, "preferred_ide", "")
+        self._state.update_config(preferred_ide=str(saved_ide))
 
     def _apply_styles(self) -> None:
         self.setStyleSheet("""

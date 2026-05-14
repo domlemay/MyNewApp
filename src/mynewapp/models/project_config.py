@@ -228,6 +228,7 @@ class ProjectConfig(BaseModel):
     auto_install_deps: bool = True
     open_after_creation: bool = True
     editor: str = "vscode"
+    preferred_ide: str = ""  # IDE name saved in Settings ("VS Code", "Cursor", …)
 
     # ─── Plugin data ──────────────────────────────────────────────────────────
     plugin_data: dict[str, Any] = Field(default_factory=dict)

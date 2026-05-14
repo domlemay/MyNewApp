@@ -7,6 +7,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QCheckBox,
+    QComboBox,
     QDialog,
     QDialogButtonBox,
     QFileDialog,
@@ -22,6 +23,7 @@ from PyQt6.QtWidgets import (
 from mynewapp.auth.auth_service import AuthService
 from mynewapp.auth.models import User
 from mynewapp.i18n import tr
+from mynewapp.services.ide_service import IdeService
 
 
 class SettingsDialog(QDialog):
@@ -193,6 +195,44 @@ class SettingsDialog(QDialog):
 
         layout.addWidget(gh_group)
 
+        # ── IDE preference section ────────────────────────────────
+        ide_group = QGroupBox("💻  IDE par défaut")
+        ide_group.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
+        ide_layout_v = QVBoxLayout(ide_group)
+        ide_layout_v.setSpacing(8)
+
+        ide_hint2 = QLabel("L'IDE sélectionné s'ouvrira automatiquement après la génération.")
+        ide_hint2.setStyleSheet("color: #6e7681; font-size: 10px;")
+        ide_hint2.setWordWrap(True)
+        ide_layout_v.addWidget(ide_hint2)
+
+        self._ide_combo = QComboBox()
+        self._ide_combo.setStyleSheet("""
+            QComboBox {
+                background: #161b22; border: 1px solid #30363d;
+                border-radius: 6px; color: #e6edf3; padding: 6px 10px; font-size: 12px;
+            }
+            QComboBox::drop-down { border: none; }
+            QComboBox QAbstractItemView {
+                background: #161b22; border: 1px solid #30363d; color: #e6edf3;
+                selection-background-color: #21262d;
+            }
+        """)
+        self._ide_combo.addItem("Automatique (premier détecté)", userData="")
+        self._detected_ides = IdeService().detect_all()
+        for ide in self._detected_ides:
+            self._ide_combo.addItem(ide.name, userData=ide.name)
+
+        saved_ide = self._auth.get_user_pref(self._user, "preferred_ide", "")
+        if saved_ide:
+            for i in range(self._ide_combo.count()):
+                if self._ide_combo.itemData(i) == saved_ide:
+                    self._ide_combo.setCurrentIndex(i)
+                    break
+
+        ide_layout_v.addWidget(self._ide_combo)
+        layout.addWidget(ide_group)
+
         # ── Generation section ────────────────────────────────────
         gen_group = QGroupBox("⚡  Génération")
         gen_group.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
@@ -205,11 +245,6 @@ class SettingsDialog(QDialog):
         self._open_ide_cb.setStyleSheet("color: #c9d1d9;")
         self._open_ide_cb.setChecked(bool(saved_open_ide))
         gen_layout.addWidget(self._open_ide_cb)
-
-        ide_hint = QLabel("L'IDE détecté (VS Code, Cursor, PyCharm…) s'ouvre automatiquement sur le projet généré.")
-        ide_hint.setStyleSheet("color: #6e7681; font-size: 10px;")
-        ide_hint.setWordWrap(True)
-        gen_layout.addWidget(ide_hint)
 
         layout.addWidget(gen_group)
 
@@ -279,6 +314,9 @@ class SettingsDialog(QDialog):
         self._auth.set_user_pref(self._user, "default_output_dir", self._dir_input.text())
         self._auth.set_user_pref(
             self._user, "open_ide_after_generation", self._open_ide_cb.isChecked()
+        )
+        self._auth.set_user_pref(
+            self._user, "preferred_ide", self._ide_combo.currentData() or ""
         )
         self.settings_saved.emit()
         self.accept()

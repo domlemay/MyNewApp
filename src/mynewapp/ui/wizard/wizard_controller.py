@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 
 from PyQt6.QtWidgets import (
+    QApplication,
     QHBoxLayout,
     QPushButton,
     QStackedWidget,
@@ -67,6 +68,7 @@ class WizardController(QWidget):
         layout = QHBoxLayout(bar)
         layout.setContentsMargins(24, 0, 24, 0)
 
+        # Normal navigation
         self._btn_back = QPushButton(tr("back"))
         self._btn_back.setObjectName("secondaryBtn")
         self._btn_back.setFixedWidth(100)
@@ -75,9 +77,24 @@ class WizardController(QWidget):
         self._btn_next.setObjectName("primaryBtn")
         self._btn_next.setFixedWidth(160)
 
+        # Post-generation actions (hidden until generation succeeds)
+        self._btn_quit = QPushButton(tr("btn_quit"))
+        self._btn_quit.setObjectName("secondaryBtn")
+        self._btn_quit.setFixedWidth(110)
+        self._btn_quit.setVisible(False)
+        self._btn_quit.clicked.connect(lambda: QApplication.instance().quit())  # type: ignore[union-attr]
+
+        self._btn_regenerate = QPushButton(tr("btn_regenerate"))
+        self._btn_regenerate.setObjectName("primaryBtn")
+        self._btn_regenerate.setFixedWidth(160)
+        self._btn_regenerate.setVisible(False)
+        self._btn_regenerate.clicked.connect(self._on_regenerate)
+
         layout.addWidget(self._btn_back)
+        layout.addWidget(self._btn_quit)
         layout.addStretch()
         layout.addWidget(self._btn_next)
+        layout.addWidget(self._btn_regenerate)
 
         bar.setStyleSheet("""
             #navBar {
@@ -91,6 +108,7 @@ class WizardController(QWidget):
         self._btn_back.clicked.connect(self._on_back)
         self._btn_next.clicked.connect(self._on_next)
         self._state.step_changed.connect(self._on_step_changed)
+        self._state.generation_finished.connect(self._on_generation_finished)
         get_translator().language_changed.connect(self._on_language_changed)
         self._on_step_changed(0)
 
@@ -114,8 +132,26 @@ class WizardController(QWidget):
         else:
             self._btn_next.clicked.connect(self._on_next)
 
+    def _on_generation_finished(self, success: bool, _value: str) -> None:
+        if success:
+            self._btn_back.setVisible(False)
+            self._btn_next.setVisible(False)
+            self._btn_quit.setVisible(True)
+            self._btn_regenerate.setVisible(True)
+
+    def _on_regenerate(self) -> None:
+        self._btn_quit.setVisible(False)
+        self._btn_regenerate.setVisible(False)
+        self._btn_back.setVisible(True)
+        self._btn_next.setVisible(True)
+        summary_step = self._steps[-1]
+        if hasattr(summary_step, "start_generation"):
+            summary_step.start_generation()
+
     def _on_language_changed(self, _lang: str) -> None:
         self._btn_back.setText(tr("back"))
+        self._btn_quit.setText(tr("btn_quit"))
+        self._btn_regenerate.setText(tr("btn_regenerate"))
         self._update_next_btn()
 
     def _update_next_btn(self) -> None:
