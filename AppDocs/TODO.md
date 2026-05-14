@@ -250,4 +250,3 @@ APPLE_PRIVATE_KEY=<contenu du fichier .p8>
 - `[P3]` **Mode collaboratif** — plusieurs développeurs configurent le même projet ensemble
 - `[P3]` **Analytics de stack** — quelles combinaisons sont les plus populaires parmi les utilisateurs
 - `[P3]` **Assistant IA intégré** — suggestions de stack basées sur la description du projet
-ge
