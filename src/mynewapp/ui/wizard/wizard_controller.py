@@ -5,6 +5,7 @@ from PyQt6.QtWidgets import (
 )
 
 from mynewapp.core import StateManager, ProjectBuilder
+from mynewapp.i18n import tr, get_translator
 from mynewapp.ui.wizard.steps.step_project_info import StepProjectInfo
 from mynewapp.ui.wizard.steps.step_github import StepGitHub
 from mynewapp.ui.wizard.steps.step_project_type import StepProjectType
@@ -21,6 +22,7 @@ class WizardController(QWidget):
         super().__init__()
         self._state = state
         self._builder = builder
+        self._is_last = False
         self._build()
         self._connect()
 
@@ -29,7 +31,6 @@ class WizardController(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
 
-        # Page stack
         self._stack = QStackedWidget()
         self._steps = [
             StepProjectInfo(self._state),
@@ -46,7 +47,6 @@ class WizardController(QWidget):
             self._stack.addWidget(step)
         layout.addWidget(self._stack, stretch=1)
 
-        # Navigation bar
         nav = self._build_nav()
         layout.addWidget(nav)
 
@@ -57,13 +57,13 @@ class WizardController(QWidget):
         layout = QHBoxLayout(bar)
         layout.setContentsMargins(24, 0, 24, 0)
 
-        self._btn_back = QPushButton("Back")
+        self._btn_back = QPushButton(tr("back"))
         self._btn_back.setObjectName("secondaryBtn")
         self._btn_back.setFixedWidth(100)
 
-        self._btn_next = QPushButton("Next")
+        self._btn_next = QPushButton(tr("next"))
         self._btn_next.setObjectName("primaryBtn")
-        self._btn_next.setFixedWidth(140)
+        self._btn_next.setFixedWidth(160)
 
         layout.addWidget(self._btn_back)
         layout.addStretch()
@@ -81,12 +81,12 @@ class WizardController(QWidget):
         self._btn_back.clicked.connect(self._on_back)
         self._btn_next.clicked.connect(self._on_next)
         self._state.step_changed.connect(self._on_step_changed)
+        get_translator().language_changed.connect(self._on_language_changed)
         self._on_step_changed(0)
 
     def _on_next(self) -> None:
-        if self._state.is_last_step():
-            return
-        self._state.next_step()
+        if not self._is_last:
+            self._state.next_step()
 
     def _on_back(self) -> None:
         self._state.prev_step()
@@ -94,17 +94,24 @@ class WizardController(QWidget):
     def _on_step_changed(self, step: int) -> None:
         self._stack.setCurrentIndex(step)
         self._btn_back.setEnabled(not self._state.is_first_step())
-        is_last = self._state.is_last_step()
-        self._btn_next.setText("Generate Project" if is_last else "Next →")
-        if is_last:
+        self._is_last = self._state.is_last_step()
+        self._update_next_btn()
+
+        try:
             self._btn_next.clicked.disconnect()
+        except Exception:
+            pass
+        if self._is_last:
             self._btn_next.clicked.connect(self._on_generate)
         else:
-            try:
-                self._btn_next.clicked.disconnect()
-            except Exception:
-                pass
             self._btn_next.clicked.connect(self._on_next)
+
+    def _on_language_changed(self, _lang: str) -> None:
+        self._btn_back.setText(tr("back"))
+        self._update_next_btn()
+
+    def _update_next_btn(self) -> None:
+        self._btn_next.setText(tr("generate") if self._is_last else tr("next"))
 
     def _on_generate(self) -> None:
         summary_step = self._steps[-1]

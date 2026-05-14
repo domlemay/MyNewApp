@@ -21,7 +21,7 @@ class PreviewPanel(QFrame):
         layout.setContentsMargins(16, 16, 16, 16)
 
         title = QLabel("Preview")
-        title.setFont(QFont("Segoe UI", 12, QFont.Weight.SemiBold))
+        title.setFont(QFont("Segoe UI", 12, QFont.Weight.DemiBold))
         title.setObjectName("previewTitle")
         layout.addWidget(title)
 

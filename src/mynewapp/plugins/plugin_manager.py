@@ -61,8 +61,11 @@ class PluginManager:
             obj = getattr(module, attr_name)
             if (
                 isinstance(obj, type)
-                and issubclass(obj, IPlugin)
                 and obj is not IPlugin
+                and hasattr(obj, "metadata")
+                and hasattr(obj, "can_handle")
+                and hasattr(obj, "generate_files")
+                and hasattr(obj, "get_dependencies")
             ):
                 try:
                     instance: IPlugin = obj()

@@ -33,6 +33,10 @@ dependencies = [
     "loguru>=0.7.2",
     "platformdirs>=4.2.0",
     "packaging>=23.2",
+    "sqlalchemy>=2.0.0",
+    "bcrypt>=4.1.0",
+    "cryptography>=41.0.0",
+    "msal>=1.26.0",
 ]
 
 [project.optional-dependencies]
