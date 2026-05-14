@@ -23,6 +23,7 @@ class User(Base):
     github_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     microsoft_token_enc: Mapped[str | None] = mapped_column(Text, nullable=True)
     preferred_language: Mapped[str] = mapped_column(String(5), default="fr")
+    prefs: Mapped[str | None] = mapped_column(Text, nullable=True, default="{}")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)

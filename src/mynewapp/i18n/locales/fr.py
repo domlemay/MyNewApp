@@ -11,23 +11,27 @@ T: dict[str, str] = {
     # Sidebar steps
     "step_project_info": "Infos projet",
     "step_github": "GitHub",
-    "step_project_type": "Type de projet",
+    "step_project_type": "Plateforme",
     "step_language": "Langage",
     "step_framework": "Framework",
     "step_libraries": "Librairies",
     "step_ai_tools": "Outils IA",
     "step_structure": "Architecture",
+    "step_env_vars": "Variables Env",
     "step_summary": "Résumé",
+    "settings": "Paramètres",
 
     # Step subtitles
     "sub_project_info": "Nommez votre projet et choisissez où le sauvegarder.",
     "sub_github": "Connectez votre compte GitHub pour créer le dépôt automatiquement.",
-    "sub_project_type": "Quel type de projet allez-vous créer?",
+    "sub_project_type": "Pour quelle plateforme construisez-vous?",
+    "platform_hint": "Choisissez une ou plusieurs plateformes. Vous pouvez les combiner (ex : Web + API pour une app full-stack).",
     "sub_language": "Quel langage de programmation utiliserez-vous?",
     "sub_framework": "Choisissez le framework pour votre projet.",
     "sub_libraries": "Sélectionnez les librairies et fonctionnalités dont vous avez besoin.",
     "sub_ai_tools": "Intégrez des outils IA dans votre projet dès le départ.",
     "sub_structure": "Choisissez le patron d'architecture pour votre projet.",
+    "sub_env_vars": "Définissez les variables d'environnement requises par votre stack.",
     "sub_summary": "Vérifiez votre configuration avant de générer.",
 
     # Project Info
@@ -144,6 +148,7 @@ T: dict[str, str] = {
     "incompat_blocked": "Bloqué par: {reason}",
 
     # Architecture
+    "cicd_template": "Template CI/CD",
     "arch_preview_title": "Aperçu de l'architecture",
     "arch_file_tree": "Structure des fichiers",
     "arch_diagram": "Diagramme",

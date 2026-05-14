@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from datetime import datetime
+from typing import Any
 
 import bcrypt
 from loguru import logger
@@ -124,3 +126,40 @@ class AuthService:
             display_name="Guest",
             provider="guest",
         )
+
+    # ─── User Preferences ────────────────────────────────────────────────────
+
+    def get_user_pref(self, user: User, key: str, default: Any = None) -> Any:
+        try:
+            prefs: dict[str, Any] = json.loads(user.prefs or "{}")
+        except (json.JSONDecodeError, TypeError):
+            prefs = {}
+        return prefs.get(key, default)
+
+    def set_user_pref(self, user: User, key: str, value: Any) -> None:
+        try:
+            prefs: dict[str, Any] = json.loads(user.prefs or "{}")
+        except (json.JSONDecodeError, TypeError):
+            prefs = {}
+        prefs[key] = value
+        serialized = json.dumps(prefs)
+        user.prefs = serialized
+        if not getattr(user, "id", None):
+            return
+        with self._db.session() as session:
+            db_user = session.scalar(select(User).where(User.id == user.id))
+            if db_user:
+                db_user.prefs = serialized
+                session.commit()
+
+    def change_password(self, user: User, new_password: str) -> None:
+        hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
+        user.password_hash = hashed
+        if not getattr(user, "id", None):
+            return
+        with self._db.session() as session:
+            db_user = session.scalar(select(User).where(User.id == user.id))
+            if db_user:
+                db_user.password_hash = hashed
+                session.commit()
+        logger.info(f"Password changed for user: {user.email}")

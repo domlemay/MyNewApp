@@ -6,7 +6,7 @@ from pathlib import Path
 import keyring
 from cryptography.fernet import Fernet
 from platformdirs import user_data_dir
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from mynewapp.auth.models import Base
@@ -40,9 +40,17 @@ class Database:
         db_path = data_dir / "mynewapp.db"
         self._engine = create_engine(f"sqlite:///{db_path}", echo=False)
         Base.metadata.create_all(self._engine)
+        self._migrate()
         self._SessionLocal = sessionmaker(bind=self._engine)
         self._fernet = Fernet(_get_or_create_key())
         self._initialized = True
+
+    def _migrate(self) -> None:
+        with self._engine.connect() as conn:
+            cols = [r[1] for r in conn.execute(text("PRAGMA table_info(users)")).fetchall()]
+            if "prefs" not in cols:
+                conn.execute(text("ALTER TABLE users ADD COLUMN prefs TEXT DEFAULT '{}'"))
+                conn.commit()
 
     def session(self) -> Session:
         return self._SessionLocal()

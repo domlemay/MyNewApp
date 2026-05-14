@@ -167,10 +167,13 @@ class ProjectConfig(BaseModel):
     github_username: str = ""
 
     # ─── Stack (plain str so any value is accepted without enum validation) ───
-    project_type: str = "web_api"
+    project_type: str = "web"
+    platforms: list[str] = Field(default_factory=list)  # multi-select from Platform step
     language: str = "python"
     framework: str = "fastapi"
     additional_libraries: list[str] = Field(default_factory=list)
+    env_vars: dict[str, str] = Field(default_factory=dict)  # .env values filled by user
+    ai_docs: list[str] = Field(default_factory=list)  # paths to imported AI reference docs
 
     # ─── Architecture ─────────────────────────────────────────────────────────
     architecture: str = "clean"

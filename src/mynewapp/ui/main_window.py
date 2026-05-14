@@ -16,6 +16,7 @@ from mynewapp.auth.auth_service import AuthService
 from mynewapp.auth.models import User
 from mynewapp.core import ProjectBuilder, StateManager
 from mynewapp.i18n import get_language, get_translator, set_language, tr
+from mynewapp.ui.settings import SettingsDialog
 from mynewapp.ui.widgets.progress_sidebar import ProgressSidebar
 from mynewapp.ui.wizard.wizard_controller import WizardController
 
@@ -35,8 +36,8 @@ class MainWindow(QMainWindow):
 
     def _setup_window(self) -> None:
         self.setWindowTitle(tr("app_title"))
-        self.setMinimumSize(QSize(1100, 720))
-        self.resize(1200, 800)
+        self.setMinimumSize(QSize(1350, 820))
+        self.resize(1500, 900)
 
     def _build_ui(self) -> None:
         root = QWidget()
@@ -99,6 +100,7 @@ class MainWindow(QMainWindow):
     def _connect_signals(self) -> None:
         self._state.step_changed.connect(self._on_step_changed)
         get_translator().language_changed.connect(self._on_language_changed)
+        self._sidebar.settings_clicked.connect(self._open_settings)
 
     def _on_step_changed(self, step: int) -> None:
         self._step_label.setText(
@@ -116,6 +118,10 @@ class MainWindow(QMainWindow):
         self._step_label.setText(
             tr("step_n_of_m", n=self._state.current_step + 1, m=self._state.total_steps)
         )
+
+    def _open_settings(self) -> None:
+        dlg = SettingsDialog(self._auth, self._user, self)
+        dlg.exec()
 
     def _apply_styles(self) -> None:
         self.setStyleSheet("""

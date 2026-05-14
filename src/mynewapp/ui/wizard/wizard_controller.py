@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
 from mynewapp.core import ProjectBuilder, StateManager
 from mynewapp.i18n import get_translator, tr
 from mynewapp.ui.wizard.steps.step_ai_tools import StepAiTools
+from mynewapp.ui.wizard.steps.step_env_vars import StepEnvVars
 from mynewapp.ui.wizard.steps.step_framework import StepFramework
 from mynewapp.ui.wizard.steps.step_github import StepGitHub
 from mynewapp.ui.wizard.steps.step_language import StepLanguage
@@ -47,6 +48,7 @@ class WizardController(QWidget):
             StepLibraries(self._state),
             StepAiTools(self._state),
             StepStructure(self._state),
+            StepEnvVars(self._state),
             StepSummary(self._state, self._builder),
         ]
         for step in self._steps:

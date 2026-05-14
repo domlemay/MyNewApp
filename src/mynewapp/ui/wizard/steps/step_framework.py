@@ -3,6 +3,8 @@ from __future__ import annotations
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
+    QDialog,
+    QDialogButtonBox,
     QHBoxLayout,
     QLabel,
     QScrollArea,
@@ -98,12 +100,71 @@ _FW_MAP: dict[str, list[tuple[str, str, str, str]]] = {
 }
 
 
+class _IncompatDialog(QDialog):
+    """Popup explaining why a framework is incompatible."""
+
+    def __init__(self, fw_name: str, warning: str, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle("Framework non compatible")
+        self.setMinimumWidth(420)
+        self.setStyleSheet("background: #161b22; color: #e6edf3;")
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 20, 24, 20)
+        layout.setSpacing(12)
+
+        title = QLabel(f"⚠  {fw_name}")
+        title.setFont(QFont("Segoe UI", 13, QFont.Weight.Bold))
+        title.setStyleSheet("color: #d29922;")
+        layout.addWidget(title)
+
+        sep = QWidget()
+        sep.setFixedHeight(1)
+        sep.setStyleSheet("background: #30363d;")
+        layout.addWidget(sep)
+
+        msg = QLabel(warning)
+        msg.setFont(QFont("Segoe UI", 11))
+        msg.setStyleSheet("color: #c9d1d9;")
+        msg.setWordWrap(True)
+        layout.addWidget(msg)
+
+        note = QLabel("Pour utiliser ce framework, modifiez le langage sélectionné à l'étape précédente.")
+        note.setFont(QFont("Segoe UI", 10))
+        note.setStyleSheet("color: #8b949e;")
+        note.setWordWrap(True)
+        layout.addWidget(note)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        buttons.setStyleSheet("""
+            QPushButton {
+                background: #21262d; color: #c9d1d9;
+                border: 1px solid #30363d; border-radius: 6px;
+                padding: 6px 18px; font-size: 12px;
+            }
+            QPushButton:hover { background: #30363d; }
+        """)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+
 class _FwRow(QWidget):
-    def __init__(self, key: str, icon: str, name: str, desc: str, on_select: object) -> None:
+    def __init__(
+        self,
+        key: str,
+        icon: str,
+        name: str,
+        desc: str,
+        on_select: object,
+        incompatible: bool = False,
+        warning: str = "",
+    ) -> None:
         super().__init__()
         self.key = key
         self._selected = False
         self._on_select = on_select
+        self._incompatible = incompatible
+        self._warning = warning
+        self._fw_name = name
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFixedHeight(60)
 
@@ -133,11 +194,17 @@ class _FwRow(QWidget):
 
         fl.addLayout(text, stretch=1)
 
-        self._dot = QLabel("○")
-        self._dot.setFont(QFont("Segoe UI", 14))
-        self._dot.setFixedWidth(20)
-        self._dot.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        fl.addWidget(self._dot)
+        if incompatible:
+            incompat_lbl = QLabel("⚠ incompatible")
+            incompat_lbl.setFont(QFont("Segoe UI", 9))
+            incompat_lbl.setStyleSheet("color: #f85149; background: transparent;")
+            fl.addWidget(incompat_lbl)
+        else:
+            self._dot = QLabel("○")
+            self._dot.setFont(QFont("Segoe UI", 14))
+            self._dot.setFixedWidth(20)
+            self._dot.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            fl.addWidget(self._dot)
 
         outer = QHBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
@@ -145,10 +212,20 @@ class _FwRow(QWidget):
         self._apply_style()
 
     def set_selected(self, selected: bool) -> None:
+        if self._incompatible:
+            return
         self._selected = selected
         self._apply_style()
 
     def _apply_style(self) -> None:
+        if self._incompatible:
+            self._frame.setStyleSheet(
+                "#fwRow { background: #1a0e0e; border: 1px solid #6e1a1a; border-radius: 6px; }"
+            )
+            self._name_lbl.setStyleSheet("color: #8b3333;")
+            self._desc_lbl.setStyleSheet("color: #6e3333;")
+            return
+
         if self._selected:
             self._frame.setStyleSheet(
                 "#fwRow { background: #0d419d; border: 2px solid #58a6ff; border-radius: 6px; }"
@@ -167,6 +244,10 @@ class _FwRow(QWidget):
             self._dot.setText("○")
 
     def mousePressEvent(self, event: object) -> None:  # noqa: N802
+        if self._incompatible:
+            dlg = _IncompatDialog(self._fw_name, self._warning, self)
+            dlg.exec()
+            return
         self.set_selected(True)
         if callable(self._on_select):
             self._on_select(self.key)
@@ -175,18 +256,12 @@ class _FwRow(QWidget):
 class StepFramework(BaseStep):
     def __init__(self, state: StateManager) -> None:
         self._rows: list[_FwRow] = []
-        self._warning_lbl: QLabel | None = None
         self._list_layout: QVBoxLayout | None = None
+        self._incompat_section_lbl: QLabel | None = None
         super().__init__(state, tr("step_framework"), tr("sub_framework"))
         state.config_changed.connect(self._refresh_options)
 
     def _build_content(self) -> None:
-        self._warning_lbl = QLabel("")
-        self._warning_lbl.setStyleSheet("color: #d29922; font-size: 11px; font-weight: 600;")
-        self._warning_lbl.setWordWrap(True)
-        self._warning_lbl.setVisible(False)
-        self._content.addWidget(self._warning_lbl)
-
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("""
@@ -210,29 +285,49 @@ class StepFramework(BaseStep):
             return
 
         lang = str(getattr(config, "language", "python"))
-        entries = _FW_MAP.get(lang, [])
+        all_entries = _FW_MAP.get(lang, [])
 
-        for row in self._rows:
-            self._list_layout.removeWidget(row)
-            row.deleteLater()
-        self._rows.clear()
-
-        # Remove stretch if any
+        # Clear existing rows
         while self._list_layout.count():
             item = self._list_layout.takeAt(0)
             if item is not None and item.widget() is not None:
                 item.widget().deleteLater()  # type: ignore[union-attr]
+        self._rows.clear()
 
-        if not entries:
+        if not all_entries:
             empty = QLabel(f"Aucun framework répertorié pour « {lang} ».")
             empty.setStyleSheet("color: #8b949e; font-size: 11px; padding: 8px;")
             self._list_layout.addWidget(empty)
             return
 
-        for key, name, icon, desc in entries:
-            row = _FwRow(key, icon, name, desc, self._on_select)
+        compat_entries = []
+        incompat_entries = []
+
+        for key, name, icon, desc in all_entries:
+            warning = check_framework_lang_compat(key, lang)
+            if warning:
+                incompat_entries.append((key, name, icon, desc, warning))
+            else:
+                compat_entries.append((key, name, icon, desc))
+
+        # Compatible frameworks first
+        for key, name, icon, desc in compat_entries:
+            row = _FwRow(key, icon, name, desc, self._on_select, incompatible=False)
             self._rows.append(row)
             self._list_layout.addWidget(row)
+
+        # Incompatible section separator
+        if incompat_entries:
+            sep_lbl = QLabel("─── Non compatible avec le langage sélectionné ───")
+            sep_lbl.setFont(QFont("Segoe UI", 9))
+            sep_lbl.setStyleSheet("color: #484f58; padding: 8px 4px 4px 4px;")
+            sep_lbl.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._list_layout.addWidget(sep_lbl)
+
+            for key, name, icon, desc, warning in incompat_entries:
+                row = _FwRow(key, icon, name, desc, self._on_select, incompatible=True, warning=warning)
+                self._rows.append(row)
+                self._list_layout.addWidget(row)
 
         self._list_layout.addStretch()
 
@@ -240,11 +335,4 @@ class StepFramework(BaseStep):
         for row in self._rows:
             if row.key != key:
                 row.set_selected(False)
-
-        lang = self._state.config.language
-        warning = check_framework_lang_compat(key, lang)
-        if self._warning_lbl:
-            self._warning_lbl.setText(f"⚠  {warning}" if warning else "")
-            self._warning_lbl.setVisible(bool(warning))
-
         self._state.update_config(framework=key)

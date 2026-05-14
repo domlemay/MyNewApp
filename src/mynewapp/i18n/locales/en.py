@@ -11,23 +11,27 @@ T: dict[str, str] = {
     # Sidebar steps
     "step_project_info": "Project Info",
     "step_github": "GitHub",
-    "step_project_type": "Project Type",
+    "step_project_type": "Platform",
     "step_language": "Language",
     "step_framework": "Framework",
     "step_libraries": "Libraries",
     "step_ai_tools": "AI Tools",
     "step_structure": "Architecture",
+    "step_env_vars": "Env Vars",
     "step_summary": "Summary",
+    "settings": "Settings",
 
     # Step subtitles
     "sub_project_info": "Name your project and choose where to save it.",
     "sub_github": "Connect your GitHub account to create the repository automatically.",
-    "sub_project_type": "What kind of project are you building?",
+    "sub_project_type": "What platform are you building for?",
+    "platform_hint": "Choose one or more platforms. You can combine them (e.g. Web + API for a full-stack app).",
     "sub_language": "Which programming language will you use?",
     "sub_framework": "Choose the framework for your project.",
     "sub_libraries": "Select the libraries and features you need.",
     "sub_ai_tools": "Add AI tooling to your project from day one.",
     "sub_structure": "Choose the architecture pattern for your project.",
+    "sub_env_vars": "Set environment variables required by your stack.",
     "sub_summary": "Review your configuration before generating.",
 
     # Project Info
@@ -143,7 +147,8 @@ T: dict[str, str] = {
     "incompat_fw_lang": "{fw} requires {required_lang}, but you selected {current_lang}.",
     "incompat_blocked": "Blocked by: {reason}",
 
-    # Architecture
+    # Architecture / CI/CD
+    "cicd_template": "CI/CD Template",
     "arch_preview_title": "Architecture Preview",
     "arch_file_tree": "File Structure",
     "arch_diagram": "Diagram",

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from PyQt6.QtCore import QSize, Qt, QThread, pyqtSignal
+from PyQt6.QtCore import QSettings, QSize, Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QDialog,
@@ -143,6 +143,7 @@ class LoginWindow(QDialog):
         self._ms_oauth = MicrosoftOAuth()
         self._worker: QThread | None = None
         self._mode = "login"
+        self._settings = QSettings("MyNewApp", "mynewapp")
         self.setWindowTitle("MyNewApp")
         self.setFixedSize(QSize(440, 580))
         self.setModal(True)
@@ -227,6 +228,9 @@ class LoginWindow(QDialog):
         self._email = QLineEdit()
         self._email.setObjectName("field")
         self._email.setPlaceholderText(tr("email_ph"))
+        saved_email = str(self._settings.value("login/last_email", ""))
+        if saved_email:
+            self._email.setText(saved_email)
         layout.addWidget(self._email)
 
         layout.addWidget(self._field_label(tr("password")))
@@ -330,6 +334,7 @@ class LoginWindow(QDialog):
         pwd = self._password.text()
         user = self._auth.login(email, pwd)
         if user:
+            self._settings.setValue("login/last_email", email)
             self.login_success.emit(user)
             self.accept()
         else:
@@ -347,6 +352,7 @@ class LoginWindow(QDialog):
             return
         try:
             user = self._auth.register(email, pwd)
+            self._settings.setValue("login/last_email", email)
             self.login_success.emit(user)
             self.accept()
         except Exception as e:

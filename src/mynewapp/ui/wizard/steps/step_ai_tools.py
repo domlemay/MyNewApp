@@ -1,12 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QCheckBox,
+    QFileDialog,
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QPushButton,
     QScrollArea,
     QVBoxLayout,
     QWidget,
@@ -45,13 +49,32 @@ _AI_PROVIDERS = [
 ]
 
 
+_CLAUDE_CODE_TOOLS: list[tuple[str, str, str, str]] = [
+    (
+        "caveman",
+        "🪨  Caveman",
+        "Réduit ~75% les tokens de sortie de Claude Code en mode compressé. Garde la précision technique.",
+        "https://github.com/JuliusBrussee/caveman",
+    ),
+    (
+        "ruflo",
+        "🤖  Ruflo (Claude Flow)",
+        "Orchestration multi-agents pour Claude Code. 100+ agents spécialisés, mémoire auto-apprenante, swarms.",
+        "https://github.com/ruvnet/ruflo",
+    ),
+]
+
+
 class StepAiTools(BaseStep):
     def __init__(self, state: StateManager) -> None:
         self._enabled_cb: QCheckBox | None = None
         self._file_cbs: dict[str, QCheckBox] = {}
         self._sdk_cbs: dict[str, QCheckBox] = {}
         self._provider_rows: dict[str, QWidget] = {}
+        self._claude_code_cbs: dict[str, QCheckBox] = {}
         self._selected_provider = "anthropic"
+        self._ai_docs: list[str] = []
+        self._docs_list_layout: QVBoxLayout | None = None
         super().__init__(state, tr("step_ai_tools"), tr("sub_ai_tools"))
 
     def _build_content(self) -> None:
@@ -86,6 +109,12 @@ class StepAiTools(BaseStep):
         two_col.addWidget(self._build_files_section(), stretch=1)
         two_col.addWidget(self._build_sdks_section(), stretch=1)
         panel_layout.addLayout(two_col)
+
+        # Claude Code tools (Caveman, Ruflo)
+        panel_layout.addWidget(self._build_claude_code_section())
+
+        # AI documentation import
+        panel_layout.addWidget(self._build_ai_docs_section())
 
         panel_layout.addStretch()
         scroll.setWidget(self._main_panel)
@@ -197,6 +226,116 @@ class StepAiTools(BaseStep):
 
         return group
 
+    def _build_claude_code_section(self) -> QGroupBox:
+        group = QGroupBox("🧠  Outils Claude Code")
+        group.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
+        self._style_group(group)
+        layout = QVBoxLayout(group)
+        layout.setSpacing(8)
+
+        desc = QLabel("Intégrations avancées pour Claude Code CLI (Anthropic).")
+        desc.setFont(QFont("Segoe UI", 9))
+        desc.setStyleSheet("color: #6e7681; margin-bottom: 2px;")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        for key, name, tooltip, _url in _CLAUDE_CODE_TOOLS:
+            row = QWidget()
+            rl = QVBoxLayout(row)
+            rl.setContentsMargins(0, 0, 0, 0)
+            rl.setSpacing(2)
+
+            cb = QCheckBox(name)
+            cb.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
+            cb.setStyleSheet("color: #c9d1d9;")
+            cb.stateChanged.connect(self._sync)
+            self._claude_code_cbs[key] = cb
+            rl.addWidget(cb)
+
+            tip = QLabel(tooltip)
+            tip.setFont(QFont("Segoe UI", 9))
+            tip.setStyleSheet("color: #6e7681; padding-left: 22px;")
+            tip.setWordWrap(True)
+            rl.addWidget(tip)
+
+            layout.addWidget(row)
+
+        return group
+
+    def _build_ai_docs_section(self) -> QGroupBox:
+        group = QGroupBox("📚  Documents IA (AIDocs/)")
+        group.setFont(QFont("Segoe UI", 11, QFont.Weight.Medium))
+        self._style_group(group)
+        layout = QVBoxLayout(group)
+        layout.setSpacing(6)
+
+        desc = QLabel(
+            "Importez des fichiers PDF, Markdown ou Word. Ils seront copiés dans le dossier AIDocs/ "
+            "du projet généré — accessibles par les assistants IA pour le contexte."
+        )
+        desc.setFont(QFont("Segoe UI", 9))
+        desc.setStyleSheet("color: #6e7681;")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+
+        docs_container = QWidget()
+        docs_container.setStyleSheet("background: transparent;")
+        self._docs_list_layout = QVBoxLayout(docs_container)
+        self._docs_list_layout.setContentsMargins(0, 0, 0, 0)
+        self._docs_list_layout.setSpacing(2)
+        layout.addWidget(docs_container)
+
+        import_btn = QPushButton("+ Importer des documents")
+        import_btn.setObjectName("secondaryBtn")
+        import_btn.setFixedHeight(32)
+        import_btn.clicked.connect(self._import_docs)
+        layout.addWidget(import_btn)
+
+        return group
+
+    def _import_docs(self) -> None:
+        paths, _ = QFileDialog.getOpenFileNames(
+            self,
+            "Sélectionner des documents IA",
+            "",
+            "Documents (*.pdf *.md *.markdown *.txt *.docx *.doc)",
+        )
+        for p in paths:
+            if p not in self._ai_docs:
+                self._ai_docs.append(p)
+                self._add_doc_row(p)
+        self._sync()
+
+    def _add_doc_row(self, path: str) -> None:
+        if self._docs_list_layout is None:
+            return
+        row = QWidget()
+        rl = QHBoxLayout(row)
+        rl.setContentsMargins(0, 0, 0, 0)
+        rl.setSpacing(6)
+
+        name_lbl = QLabel(Path(path).name)
+        name_lbl.setFont(QFont("Cascadia Code", 9))
+        name_lbl.setStyleSheet("color: #79c0ff;")
+        rl.addWidget(name_lbl, stretch=1)
+
+        rm_btn = QPushButton("✕")
+        rm_btn.setFixedSize(20, 20)
+        rm_btn.setStyleSheet(
+            "QPushButton { background: transparent; color: #f85149; border: none; font-size: 10px; }"
+            "QPushButton:hover { color: #ff7b72; }"
+        )
+        rm_btn.clicked.connect(lambda _checked, p=path, r=row: self._remove_doc(p, r))
+        rl.addWidget(rm_btn)
+
+        self._docs_list_layout.addWidget(row)
+
+    def _remove_doc(self, path: str, row: QWidget) -> None:
+        if path in self._ai_docs:
+            self._ai_docs.remove(path)
+        row.deleteLater()
+        self._sync()
+
     def _style_group(self, group: QGroupBox) -> None:
         group.setStyleSheet("""
             QGroupBox {
@@ -233,4 +372,7 @@ class StepAiTools(BaseStep):
             include_copilot=self._file_cbs.get("copilot", QCheckBox()).isChecked(),
             include_codeium=self._file_cbs.get("codeium", QCheckBox()).isChecked(),
             add_sdk=any(cb.isChecked() for cb in self._sdk_cbs.values()),
+            include_caveman=self._claude_code_cbs.get("caveman", QCheckBox()).isChecked(),
+            include_ruflo=self._claude_code_cbs.get("ruflo", QCheckBox()).isChecked(),
         )
+        self._state.update_config(ai_docs=list(self._ai_docs))
