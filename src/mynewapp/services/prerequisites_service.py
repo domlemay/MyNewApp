@@ -1,10 +1,39 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
+import sys
 from dataclasses import dataclass
 
 from mynewapp.models import ProjectConfig
+
+
+def _fresh_path() -> str:
+    """Return the current system PATH, re-reading the Windows registry so
+    tools installed after process startup are found."""
+    if sys.platform != "win32":
+        return os.environ.get("PATH", "")
+    try:
+        import winreg
+
+        parts: list[str] = []
+        for hive, subkey in [
+            (
+                winreg.HKEY_LOCAL_MACHINE,
+                r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment",
+            ),
+            (winreg.HKEY_CURRENT_USER, r"Environment"),
+        ]:
+            try:
+                with winreg.OpenKey(hive, subkey) as key:
+                    raw = winreg.QueryValueEx(key, "Path")[0]
+                    parts.append(winreg.ExpandEnvironmentStrings(raw))
+            except OSError:
+                pass
+        return ";".join(parts) if parts else os.environ.get("PATH", "")
+    except Exception:
+        return os.environ.get("PATH", "")
 
 
 @dataclass
@@ -94,9 +123,10 @@ class PrerequisitesService:
         url: str,
         alt: str = "",
     ) -> ToolStatus:
-        found = shutil.which(cmd) or (shutil.which(alt) if alt else None)
+        path = _fresh_path()
+        found = shutil.which(cmd, path=path) or (shutil.which(alt, path=path) if alt else None)
         if found:
-            version = self._get_version(cmd if shutil.which(cmd) else alt, args)
+            version = self._get_version(cmd if shutil.which(cmd, path=path) else alt, args)
             return ToolStatus(
                 name=cmd, label=label, version=version,
                 installed=True, critical=critical, install_url=url,
@@ -109,8 +139,10 @@ class PrerequisitesService:
     @staticmethod
     def _get_version(cmd: str, args: list[str]) -> str | None:
         try:
+            env = os.environ.copy()
+            env["PATH"] = _fresh_path()
             result = subprocess.run(
-                [cmd, *args], capture_output=True, text=True, timeout=5
+                [cmd, *args], capture_output=True, text=True, timeout=5, env=env
             )
             output = (result.stdout or result.stderr).strip()
             return output.split("\n")[0] if output else None
