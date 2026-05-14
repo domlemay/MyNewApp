@@ -167,8 +167,10 @@ class PrerequisitesDialog(QDialog):
     def _rebuild_rows(self) -> None:
         while self._rows_layout.count() > 1:
             item = self._rows_layout.takeAt(0)
-            if item and item.widget():
-                item.widget().deleteLater()  # type: ignore[union-attr]
+            w = item.widget() if item else None
+            if w is not None:
+                w.hide()
+                w.deleteLater()
 
         for i, status in enumerate(self._statuses):
             row = self._make_tool_row(status)
