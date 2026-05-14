@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -25,6 +26,85 @@ _NODE_FRAMEWORKS = {"nextjs", "react", "vue", "angular", "nuxt", "svelte", "astr
 _GO_FRAMEWORKS = {"gin", "echo", "fiber", "chi"}
 _RUST_FRAMEWORKS = {"tauri", "actix", "axum"}
 _DART_FRAMEWORKS = {"flutter"}
+
+# --------------------------------------------------------------------------- #
+# Library → npm / pip package mappings
+# --------------------------------------------------------------------------- #
+
+# deps: runtime dependencies, devDeps: devDependencies
+_NODE_LIB_DEPS: dict[str, dict[str, list[str]]] = {
+    "clerk":         {"deps": ["@clerk/nextjs"],              "devDeps": []},
+    "prisma":        {"deps": ["@prisma/client"],             "devDeps": ["prisma"]},
+    "drizzle":       {"deps": ["drizzle-orm"],                "devDeps": ["drizzle-kit"]},
+    "neon":          {"deps": ["@neondatabase/serverless"],   "devDeps": []},
+    "postgresql":    {"deps": ["pg"],                         "devDeps": ["@types/pg"]},
+    "redis":         {"deps": ["ioredis"],                    "devDeps": ["@types/ioredis"]},
+    "tailwindcss":   {"deps": ["tailwindcss", "postcss", "autoprefixer"], "devDeps": []},
+    "shadcn":        {"deps": ["class-variance-authority", "clsx", "tailwind-merge", "lucide-react"], "devDeps": []},
+    "zustand":       {"deps": ["zustand"],                    "devDeps": []},
+    "react-query":   {"deps": ["@tanstack/react-query"],      "devDeps": []},
+    "zod":           {"deps": ["zod"],                        "devDeps": []},
+    "stripe":        {"deps": ["stripe", "@stripe/stripe-js"], "devDeps": []},
+    "supabase":      {"deps": ["@supabase/supabase-js"],      "devDeps": []},
+    "auth0":         {"deps": ["@auth0/nextjs-auth0"],        "devDeps": []},
+    "firebase":      {"deps": ["firebase"],                   "devDeps": []},
+    "mongodb":       {"deps": ["mongoose"],                   "devDeps": ["@types/mongoose"]},
+    "graphql":       {"deps": ["graphql", "@apollo/server"],  "devDeps": []},
+    "sentry":        {"deps": ["@sentry/nextjs"],             "devDeps": []},
+    "resend":        {"deps": ["resend"],                     "devDeps": []},
+    "uploadthing":   {"deps": ["uploadthing", "@uploadthing/react"], "devDeps": []},
+    "aws":           {"deps": ["@aws-sdk/client-s3"],         "devDeps": []},
+    "planetscale":   {"deps": ["@planetscale/database"],      "devDeps": []},
+    "cloudflare":    {"deps": ["@cloudflare/workers-types"],  "devDeps": []},
+    "socket.io":     {"deps": ["socket.io"],                  "devDeps": []},
+}
+
+_PYTHON_LIB_DEPS: dict[str, list[str]] = {
+    "postgresql":  ["asyncpg>=0.29", "psycopg2-binary>=2.9"],
+    "neon":        ["asyncpg>=0.29"],
+    "redis":       ["redis>=5.0"],
+    "mongodb":     ["motor>=3.4", "beanie>=1.25"],
+    "sqlalchemy":  ["sqlalchemy>=2.0", "alembic>=1.13"],
+    "celery":      ["celery>=5.3"],
+    "stripe":      ["stripe>=9.0"],
+    "supabase":    ["supabase>=2.0"],
+    "aws":         ["boto3>=1.34"],
+    "gcp":         ["google-cloud-storage>=2.14"],
+    "azure":       ["azure-storage-blob>=12.19"],
+    "sentry":      ["sentry-sdk[fastapi]>=2.0"],
+    "firebase":    ["firebase-admin>=6.5"],
+    "graphql":     ["strawberry-graphql>=0.235"],
+    "zod":         [],  # zod is JS-only
+    "prisma":      [],  # Prisma is JS-only
+}
+
+
+def _fresh_path() -> str:
+    """Return the current PATH, re-reading the Windows registry when on Windows."""
+    if sys.platform != "win32":
+        return os.environ.get("PATH", "")
+    try:
+        import winreg
+        parts: list[str] = []
+        for hive, subkey in [
+            (winreg.HKEY_LOCAL_MACHINE,
+             r"SYSTEM\CurrentControlSet\Control\Session Manager\Environment"),
+            (winreg.HKEY_CURRENT_USER, r"Environment"),
+        ]:
+            try:
+                with winreg.OpenKey(hive, subkey) as key:
+                    raw = winreg.QueryValueEx(key, "Path")[0]
+                    parts.append(winreg.ExpandEnvironmentStrings(raw))
+            except OSError:
+                pass
+        return ";".join(parts) if parts else os.environ.get("PATH", "")
+    except Exception:
+        return os.environ.get("PATH", "")
+
+
+def _which(cmd: str) -> str | None:
+    """shutil.which() but with the live system PATH."""
+    return shutil.which(cmd, path=_fresh_path())
 
 
 class ProjectGenerator:
@@ -165,10 +245,13 @@ class ProjectGenerator:
             self._gen_python_sources(config, path, pkg, fw)
         elif lang in ("typescript", "javascript") and fw == "nextjs":
             self._gen_nextjs_sources(config, path)
+            self._gen_library_files_node(config, path, fw)
         elif lang in ("typescript", "javascript") and fw == "nestjs":
             self._gen_nestjs_sources(config, path, pkg)
+            self._gen_library_files_node(config, path, fw)
         elif lang in ("typescript", "javascript"):
             self._gen_node_sources(config, path, fw)
+            self._gen_library_files_node(config, path, fw)
         elif lang == "go":
             self._gen_go_sources(config, path, fw)
         elif lang == "rust":
@@ -459,6 +542,208 @@ class ProjectGenerator:
             console.log("Starting {config.name}...");
         '''))
 
+    def _gen_library_files_node(self, config: ProjectConfig, path: Path, fw: str) -> None:
+        """Generate library-specific config and helper files for Node/TS projects."""
+        libs_lower = {lib.lower() for lib in config.additional_libraries}
+
+        def has(keyword: str) -> bool:
+            return any(keyword in lib for lib in libs_lower)
+
+        lib_dir = path / "lib"
+        lib_dir.mkdir(parents=True, exist_ok=True)
+
+        # ── Prisma ────────────────────────────────────────────────────────
+        if has("prisma"):
+            prisma_dir = path / "prisma"
+            prisma_dir.mkdir(exist_ok=True)
+            datasource = "postgresql" if has("neon") or has("postgresql") or has("postgres") else "postgresql"
+            provider_url = 'env("DATABASE_URL")'
+            (prisma_dir / "schema.prisma").write_text(dedent(f'''\
+                generator client {{
+                  provider = "prisma-client-js"
+                }}
+
+                datasource db {{
+                  provider = "{datasource}"
+                  url      = {provider_url}
+                }}
+
+                model User {{
+                  id        String   @id @default(cuid())
+                  email     String   @unique
+                  name      String?
+                  createdAt DateTime @default(now())
+                  updatedAt DateTime @updatedAt
+                }}
+            '''))
+            (lib_dir / "prisma.ts").write_text(dedent('''\
+                import { PrismaClient } from "@prisma/client";
+
+                const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+
+                export const prisma =
+                  globalForPrisma.prisma ?? new PrismaClient({ log: ["query"] });
+
+                if (process.env.NODE_ENV !== "production") {
+                  globalForPrisma.prisma = prisma;
+                }
+            '''))
+
+        # ── Drizzle ───────────────────────────────────────────────────────
+        if has("drizzle"):
+            db_dir = path / "db"
+            db_dir.mkdir(exist_ok=True)
+            (db_dir / "schema.ts").write_text(dedent('''\
+                import { pgTable, text, timestamp } from "drizzle-orm/pg-core";
+                import { createId } from "@paralleldrive/cuid2";
+
+                export const users = pgTable("users", {
+                  id:        text("id").primaryKey().$defaultFn(() => createId()),
+                  email:     text("email").notNull().unique(),
+                  name:      text("name"),
+                  createdAt: timestamp("created_at").notNull().defaultNow(),
+                });
+            '''))
+            (db_dir / "index.ts").write_text(dedent('''\
+                import { drizzle } from "drizzle-orm/neon-serverless";
+                import { Pool } from "@neondatabase/serverless";
+                import * as schema from "./schema";
+
+                const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+                export const db = drizzle(pool, { schema });
+            ''') if has("neon") else dedent('''\
+                import { drizzle } from "drizzle-orm/node-postgres";
+                import { Pool } from "pg";
+                import * as schema from "./schema";
+
+                const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
+                export const db = drizzle(pool, { schema });
+            '''))
+            (path / "drizzle.config.ts").write_text(dedent('''\
+                import type { Config } from "drizzle-kit";
+
+                export default {
+                  schema: "./db/schema.ts",
+                  out: "./drizzle",
+                  driver: "pg",
+                  dbCredentials: { connectionString: process.env.DATABASE_URL! },
+                } satisfies Config;
+            '''))
+
+        # ── Neon (without Prisma or Drizzle) ─────────────────────────────
+        if has("neon") and not has("prisma") and not has("drizzle"):
+            (lib_dir / "db.ts").write_text(dedent('''\
+                import { neon } from "@neondatabase/serverless";
+
+                export const sql = neon(process.env.DATABASE_URL!);
+            '''))
+
+        # ── Clerk (Next.js) ───────────────────────────────────────────────
+        if has("clerk") and fw == "nextjs":
+            (path / "middleware.ts").write_text(dedent('''\
+                import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+
+                const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"]);
+
+                export default clerkMiddleware(async (auth, request) => {
+                  if (!isPublicRoute(request)) {
+                    await auth.protect();
+                  }
+                });
+
+                export const config = {
+                  matcher: ["/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)", "/(api|trpc)(.*)"],
+                };
+            '''))
+            (lib_dir / "auth.ts").write_text(dedent('''\
+                import { auth, currentUser } from "@clerk/nextjs/server";
+
+                export async function getAuthUser() {
+                  const { userId } = await auth();
+                  if (!userId) return null;
+                  return currentUser();
+                }
+            '''))
+
+        # ── Auth0 (Next.js) ────────────────────────────────────────────────
+        if has("auth0") and fw == "nextjs":
+            (lib_dir / "auth0.ts").write_text(dedent('''\
+                import { Auth0Client } from "@auth0/nextjs-auth0";
+
+                export const auth0 = new Auth0Client({
+                  domain: process.env.AUTH0_DOMAIN!,
+                  clientId: process.env.AUTH0_CLIENT_ID!,
+                  clientSecret: process.env.AUTH0_CLIENT_SECRET!,
+                  secret: process.env.AUTH0_SECRET!,
+                  appBaseUrl: process.env.APP_BASE_URL ?? "http://localhost:3000",
+                });
+            '''))
+
+        # ── Supabase ──────────────────────────────────────────────────────
+        if has("supabase"):
+            (lib_dir / "supabase.ts").write_text(dedent('''\
+                import { createClient } from "@supabase/supabase-js";
+
+                export const supabase = createClient(
+                  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+                );
+            '''))
+
+        # ── Stripe ────────────────────────────────────────────────────────
+        if has("stripe"):
+            (lib_dir / "stripe.ts").write_text(dedent('''\
+                import Stripe from "stripe";
+
+                export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+                  apiVersion: "2024-04-10",
+                  typescript: true,
+                });
+            '''))
+
+        # ── Resend ────────────────────────────────────────────────────────
+        if has("resend"):
+            (lib_dir / "email.ts").write_text(dedent('''\
+                import { Resend } from "resend";
+
+                export const resend = new Resend(process.env.RESEND_API_KEY!);
+            '''))
+
+        # ── Tailwind ─────────────────────────────────────────────────────
+        if has("tailwindcss") or has("shadcn"):
+            (path / "tailwind.config.ts").write_text(dedent('''\
+                import type { Config } from "tailwindcss";
+
+                export default {
+                  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
+                  theme: { extend: {} },
+                  plugins: [],
+                } satisfies Config;
+            '''))
+            (path / "postcss.config.js").write_text(dedent('''\
+                module.exports = {
+                  plugins: { tailwindcss: {}, autoprefixer: {} },
+                };
+            '''))
+            css_path = path / "app" / "globals.css" if fw == "nextjs" else path / "src" / "globals.css"
+            css_path.parent.mkdir(parents=True, exist_ok=True)
+            css_path.write_text("@tailwind base;\n@tailwind components;\n@tailwind utilities;\n")
+
+        # ── Redis (ioredis) ───────────────────────────────────────────────
+        if has("redis"):
+            (lib_dir / "redis.ts").write_text(dedent('''\
+                import Redis from "ioredis";
+
+                const globalForRedis = globalThis as unknown as { redis: Redis };
+
+                export const redis =
+                  globalForRedis.redis ?? new Redis(process.env.REDIS_URL ?? "redis://localhost:6379");
+
+                if (process.env.NODE_ENV !== "production") {
+                  globalForRedis.redis = redis;
+                }
+            '''))
+
     def _gen_go_sources(self, config: ProjectConfig, path: Path, fw: str) -> None:
         pkg = config.name.lower().replace("-", "")
         (path / "cmd" / "server" / "main.go").write_text(dedent(f'''\
@@ -567,13 +852,26 @@ class ProjectGenerator:
             deps.append("streamlit>=1.35")
 
         if sec.acid_transactions or "sqlalchemy" in str(config.additional_libraries).lower():
-            deps.append("sqlalchemy>=2.0")
-        if "postgresql" in str(config.additional_libraries).lower() or "neon" in str(config.additional_libraries).lower():
-            deps.append("asyncpg>=0.29")
+            if "sqlalchemy>=2.0" not in deps:
+                deps.append("sqlalchemy>=2.0")
+            if "alembic>=1.13" not in deps:
+                deps.append("alembic>=1.13")
         if sec.encrypt_sensitive_fields:
             deps.append("cryptography>=42")
         if sec.jwt_secure:
             deps += ["pyjwt>=2.8", "python-jose>=3.3"]
+
+        # Inject selected libraries
+        seen: set[str] = set(deps)
+        for lib in config.additional_libraries:
+            lib_key = lib.lower().replace(" ", "").replace("-", "").replace(".", "")
+            for key, pkgs in _PYTHON_LIB_DEPS.items():
+                if key in lib_key or lib_key in key:
+                    for pkg in pkgs:
+                        base = pkg.split(">=")[0].split("[")[0]
+                        if base not in seen:
+                            deps.append(pkg)
+                            seen.add(base)
 
         if config.ai_tools.enabled:
             if config.ai_tools.provider == "anthropic":
@@ -632,7 +930,7 @@ class ProjectGenerator:
         pkg = config.name
 
         if fw == "nextjs":
-            pkg_json = {
+            pkg_json: dict[str, object] = {
                 "name": pkg,
                 "version": "0.1.0",
                 "scripts": {
@@ -673,6 +971,24 @@ class ProjectGenerator:
                 "dependencies": {},
                 "devDependencies": {"typescript": "^5.4", "@types/node": "^20", "eslint": "^9"},
             }
+
+        # Inject selected libraries into package.json
+        deps_dict = pkg_json["dependencies"]
+        dev_deps_dict = pkg_json["devDependencies"]
+        assert isinstance(deps_dict, dict)
+        assert isinstance(dev_deps_dict, dict)
+        for lib in config.additional_libraries:
+            lib_key = lib.lower().replace(" ", "").replace("-", "").replace(".", "").replace("_", "")
+            for key, entry in _NODE_LIB_DEPS.items():
+                norm_key = key.replace("-", "").replace(".", "").replace("_", "").replace("@", "").replace("/", "")
+                if norm_key in lib_key or lib_key in norm_key:
+                    for dep in entry["deps"]:
+                        if dep not in deps_dict:
+                            deps_dict[dep] = "latest"
+                    for dep in entry["devDeps"]:
+                        if dep not in dev_deps_dict:
+                            dev_deps_dict[dep] = "latest"
+
         (path / "package.json").write_text(json.dumps(pkg_json, indent=2) + "\n")
 
         # tsconfig
@@ -1084,17 +1400,20 @@ class ProjectGenerator:
 
     def _install_deps(self, config: ProjectConfig, path: Path, emit: Callable[[str, int], None]) -> None:
         lang = config.language.lower()
+        env = os.environ.copy()
+        env["PATH"] = _fresh_path()
 
         if lang == "python":
             pkg_mgr = config.package_manager.lower()
-            if pkg_mgr == "uv" and shutil.which("uv"):
+            if pkg_mgr == "uv" and _which("uv"):
                 emit("uv venv + uv sync…", 72)
                 subprocess.run(["uv", "venv", ".venv"], cwd=path, check=True,
-                                capture_output=True)
-                subprocess.run(["uv", "sync"], cwd=path, check=True, capture_output=True)
-            elif shutil.which("poetry"):
+                                capture_output=True, env=env)
+                subprocess.run(["uv", "sync"], cwd=path, check=True, capture_output=True, env=env)
+            elif _which("poetry"):
                 emit("poetry install…", 72)
-                subprocess.run(["poetry", "install"], cwd=path, check=True, capture_output=True)
+                subprocess.run(["poetry", "install"], cwd=path, check=True,
+                                capture_output=True, env=env)
             else:
                 emit("pip install…", 72)
                 venv_py = (
@@ -1106,27 +1425,32 @@ class ProjectGenerator:
                                 cwd=path, check=True, capture_output=True)
 
         elif lang in ("typescript", "javascript"):
-            if shutil.which("pnpm"):
+            if _which("pnpm"):
                 emit("pnpm install…", 72)
-                subprocess.run(["pnpm", "install"], cwd=path, check=True, capture_output=True)
-            elif shutil.which("npm"):
+                subprocess.run(["pnpm", "install"], cwd=path, check=True,
+                                capture_output=True, env=env)
+            elif _which("npm"):
                 emit("npm install…", 72)
-                subprocess.run(["npm", "install"], cwd=path, check=True, capture_output=True)
+                subprocess.run(["npm", "install"], cwd=path, check=True,
+                                capture_output=True, env=env)
 
         elif lang == "go":
-            if shutil.which("go"):
+            if _which("go"):
                 emit("go mod tidy…", 72)
-                subprocess.run(["go", "mod", "tidy"], cwd=path, check=True, capture_output=True)
+                subprocess.run(["go", "mod", "tidy"], cwd=path, check=True,
+                                capture_output=True, env=env)
 
         elif lang == "rust":
-            if shutil.which("cargo"):
+            if _which("cargo"):
                 emit("cargo build…", 72)
-                subprocess.run(["cargo", "build"], cwd=path, check=True, capture_output=True)
+                subprocess.run(["cargo", "build"], cwd=path, check=True,
+                                capture_output=True, env=env)
 
         elif lang == "dart":
-            if shutil.which("flutter"):
+            if _which("flutter"):
                 emit("flutter pub get…", 72)
-                subprocess.run(["flutter", "pub", "get"], cwd=path, check=True, capture_output=True)
+                subprocess.run(["flutter", "pub", "get"], cwd=path, check=True,
+                                capture_output=True, env=env)
 
     # ------------------------------------------------------------------ #
     # Helpers
